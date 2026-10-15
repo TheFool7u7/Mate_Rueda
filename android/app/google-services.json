@@ -1,0 +1,40 @@
+{
+  "project_info": {
+    "project_number": "1012790476779",
+    "firebase_url": "https://wordwonderslink-default-rtdb.firebaseio.com",
+    "project_id": "wordwonderslink",
+    "storage_bucket": "wordwonderslink.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1012790476779:android:c596f4b434ca6a8a3c63ae",
+        "android_client_info": {
+          "package_name": "com.example.wordwonderslink"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "1012790476779-pbsnbqi8jvq01sq4l1cfu9kcps2i71c3.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyC9kIWRzAdKws_iGFMfcngk7byyFv3AJy8"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "1012790476779-pbsnbqi8jvq01sq4l1cfu9kcps2i71c3.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

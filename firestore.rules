@@ -1,0 +1,54 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Función helper para verificar autenticación
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    // Usuarios solo leen/escriben su propio perfil
+    match /users/{userId} {
+      allow read, write: if isAuthenticated() && request.auth.uid == userId;
+    }
+
+    match /rooms/{roomId} {
+      // Salas: cualquier autenticado puede leer
+      allow read: if isAuthenticated();
+      // Creación: cualquier autenticado
+      allow create: if isAuthenticated();
+      // Modificación: solo el host, o al unirse/salir actualizando 'players'
+      allow update, delete: if isAuthenticated() && resource.data.hostUid == request.auth.uid;
+      allow update: if isAuthenticated() && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['players']);
+      
+      // Subcolecciones de la sala
+      match /rounds/{roundId} {
+        allow read: if isAuthenticated();
+        // Solo host crea/modifica
+        allow write: if isAuthenticated() && get(/databases/$(database)/documents/rooms/$(roomId)).data.hostUid == request.auth.uid;
+        
+        match /responses/{letterId} {
+          allow read: if isAuthenticated();
+          // Solo el jugador que envía la respuesta escribe
+          allow write: if isAuthenticated() && request.resource.data.submittedBy == request.auth.uid;
+          
+          match /votes/{voterId} {
+            allow read: if isAuthenticated();
+            // Solo el votante escribe su propio voto, valor entre 1 y 10
+            allow write: if isAuthenticated() 
+                         && request.auth.uid == voterId 
+                         && request.resource.data.score >= 1 
+                         && request.resource.data.score <= 10;
+          }
+        }
+      }
+    }
+    
+    // Leaderboard
+    match /leaderboard/{userId} {
+      allow read: if isAuthenticated();
+      allow write: if isAuthenticated() && request.auth.uid == userId;
+    }
+  }
+}
