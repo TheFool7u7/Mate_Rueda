@@ -54,8 +54,12 @@ class AudioManagerService {
   }
 
   Future<void> stopTrack() async {
-    await _bgmPlayer.stop();
     _currentTrack = null;
+    try {
+      await _bgmPlayer.stop();
+    } catch (e) {
+      debugPrint('Error deteniendo música: $e');
+    }
   }
 
   Future<void> pauseTrack() async {
@@ -106,25 +110,27 @@ class AudioManagerService {
 
   AudioPlayer? _loopSfxPlayer;
 
-  Future<void> playSfx(String fileName) async {
+  Future<void> playSfx(String fileName, {double volumeFactor = 1.0}) async {
     if (!_sfxEnabled) return;
     try {
       final player = AudioPlayer();
       await player.setAsset('assets/audio/$fileName');
-      await player.setVolume(_sfxVolume);
+      await player.setVolume(_sfxVolume * volumeFactor);
       player.play().then((_) => player.dispose());
     } catch (e) {
       debugPrint('Error reproduciendo sfx $fileName: $e');
     }
   }
 
-  Future<void> startLoopSfx(String fileName) async {
+  /// [volumeFactor] (0..1) atenúa este efecto respecto al volumen general
+  /// de efectos (útil para sonidos que resultan demasiado fuertes).
+  Future<void> startLoopSfx(String fileName, {double volumeFactor = 1.0}) async {
     if (!_sfxEnabled) return;
     try {
       _loopSfxPlayer?.dispose();
       _loopSfxPlayer = AudioPlayer();
       await _loopSfxPlayer!.setAsset('assets/audio/$fileName');
-      await _loopSfxPlayer!.setVolume(_sfxVolume);
+      await _loopSfxPlayer!.setVolume(_sfxVolume * volumeFactor);
       await _loopSfxPlayer!.setLoopMode(LoopMode.one);
       await _loopSfxPlayer!.play();
     } catch (e) {
@@ -133,9 +139,14 @@ class AudioManagerService {
   }
 
   Future<void> stopLoopSfx() async {
-    await _loopSfxPlayer?.stop();
-    await _loopSfxPlayer?.dispose();
+    final player = _loopSfxPlayer;
     _loopSfxPlayer = null;
+    try {
+      await player?.stop();
+      await player?.dispose();
+    } catch (e) {
+      debugPrint('Error deteniendo loop sfx: $e');
+    }
   }
 
   void dispose() {

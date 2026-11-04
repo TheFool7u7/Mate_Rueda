@@ -1,12 +1,17 @@
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
-import 'package:flutter_tts/flutter_tts.dart';
 
 import 'package:wordwonderslink/core/constants/mate_colors.dart';
 import 'package:wordwonderslink/features/challenge/domain/math_challenge.dart';
 import 'package:wordwonderslink/features/challenge/presentation/widgets/challenge_illustrations.dart';
 import 'package:wordwonderslink/shared/data/audio_manager_service.dart';
+import 'package:wordwonderslink/shared/data/tts_service.dart';
+
+/// Sonido (en `assets/audio/`) para una respuesta incorrecta: debe ser
+/// neutro, nunca negativo (Avance II, guion multimedia). Cambiar aquí si
+/// el equipo graba/elige otro.
+const String neutralErrorSfx = 'bubble.wav';
 
 /// Pantalla 6 — Reto matemático (mockup `10_reto_matematico.png`).
 ///
@@ -22,9 +27,14 @@ class MathChallengeScreen extends StatefulWidget {
     this.progress = 0.5,
     this.enabled = true,
     this.initialSelected,
+    this.autoSpeak = false,
   });
 
   final MathChallenge challenge;
+
+  /// Lee la consigna en voz alta al mostrar el reto (RNF02: accesible para
+  /// niños con poca experiencia lectora).
+  final bool autoSpeak;
 
   /// Opción seleccionada inicialmente (p. ej. índice 1 para mockup exacto).
   final int? initialSelected;
@@ -48,7 +58,6 @@ class _MathChallengeScreenState extends State<MathChallengeScreen>
   static const double _designW = 1024;
   static const double _designH = 1536;
 
-  final FlutterTts _tts = FlutterTts();
   int? _selected;
 
   late final AnimationController _enter = AnimationController(
@@ -67,18 +76,18 @@ class _MathChallengeScreenState extends State<MathChallengeScreen>
   void initState() {
     super.initState();
     _selected = widget.initialSelected;
-    _initTts();
+    if (widget.autoSpeak) _scheduleAutoSpeak();
   }
 
-  Future<void> _initTts() async {
-    try {
-      await _tts.setLanguage('es-ES');
-      await _tts.setSpeechRate(0.45);
-      await _tts.setPitch(1.1);
-    } catch (_) {
-      // TTS no disponible en esta plataforma: el botón simplemente no habla.
-    }
+  /// Lee la consigna cuando termina la animación de entrada.
+  void _scheduleAutoSpeak() {
+    Future.delayed(const Duration(milliseconds: 900), () {
+      if (mounted && !_answered) _speakQuestion();
+    });
   }
+
+  Future<void> _speakQuestion() =>
+      TtsService.instance.speak(widget.challenge.narration);
 
   @override
   void didUpdateWidget(covariant MathChallengeScreen oldWidget) {
@@ -88,29 +97,32 @@ class _MathChallengeScreenState extends State<MathChallengeScreen>
       _answered = false;
       _selected = widget.initialSelected;
       _enter.forward(from: 0);
+      if (widget.autoSpeak) _scheduleAutoSpeak();
     }
   }
 
   @override
   void dispose() {
-    _tts.stop();
+    // No se corta la voz aquí: la pantalla siguiente (retroalimentación)
+    // ya pudo haber empezado a hablar con el mismo motor.
     _enter.dispose();
     _float.dispose();
     super.dispose();
   }
 
   void _speak() {
-    AudioManagerService().playSfx('bubble.wav');
-    _tts.stop();
-    _tts.speak(widget.challenge.narration);
+    // Sin efecto de sonido previo: competía por el audio con la voz.
+    _speakQuestion();
   }
 
   void _select(int index) {
     if (!widget.enabled || _answered) return;
     _answered = true;
+    TtsService.instance.stop();
     setState(() => _selected = index);
     final correct = widget.challenge.isCorrect(index);
-    AudioManagerService().playSfx(correct ? 'positiva.wav' : 'nagativa.wav');
+    // El error usa un sonido neutro: el guion pide "nunca negativo".
+    AudioManagerService().playSfx(correct ? 'positiva.wav' : neutralErrorSfx);
     widget.onAnswered(index, correct);
   }
 
@@ -518,9 +530,13 @@ class _ChallengeVisual extends StatelessWidget {
   final double u;
 
   Widget _group(int count, {double? size, int crossed = 0}) {
-    final s = size ?? (count <= 5 ? 150 * u : (count <= 8 ? 120 * u : 95 * u));
-    // Igual que el mockup: filas de 4 centradas.
-    final perRow = count <= 5 ? 4 : 4;
+    final s =
+        size ??
+        (count <= 5
+            ? 150 * u
+            : (count <= 8 ? 120 * u : (count <= 12 ? 95 * u : 72 * u)));
+    // Filas de 4 (como el mockup); con más de 8 objetos, filas más anchas.
+    final perRow = count <= 8 ? 4 : (count <= 12 ? 6 : 7);
     final rows = <Widget>[];
     for (var i = 0; i < count; i += perRow) {
       final end = math.min(i + perRow, count);
@@ -581,11 +597,14 @@ class _ChallengeVisual extends StatelessWidget {
           _group(challenge.countB, size: 105 * u),
         ],
       ),
-      ChallengeVisual.shape => ShapeIcon(
-        shape: challenge.shape!,
-        size: 260 * u,
-        color: MateColors.coralEnergia,
-      ),
+      ChallengeVisual.shape =>
+        challenge.shapeAsObject
+            ? HouseholdObjectIcon(shape: challenge.shape!, size: 260 * u)
+            : ShapeIcon(
+                shape: challenge.shape!,
+                size: 260 * u,
+                color: MateColors.coralEnergia,
+              ),
     };
     return FittedBox(fit: BoxFit.scaleDown, child: content);
   }
@@ -655,6 +674,9 @@ class _OptionButtonState extends State<_OptionButton> {
   Widget _label(Color color) {
     final u = widget.u;
     final o = widget.option;
+    if (o.shape != null && o.asObject) {
+      return HouseholdObjectIcon(shape: o.shape!, size: 130 * u);
+    }
     if (o.shape != null) {
       return ShapeIcon(
         shape: o.shape!,

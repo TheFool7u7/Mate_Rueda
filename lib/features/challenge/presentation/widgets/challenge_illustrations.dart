@@ -66,6 +66,27 @@ class ShapeIcon extends StatelessWidget {
   );
 }
 
+/// Objeto cotidiano del hogar que representa una figura geométrica:
+/// círculo → reloj de pared, cuadrado → ventana,
+/// triángulo → pedazo de pizza, rectángulo → celular.
+class HouseholdObjectIcon extends StatelessWidget {
+  const HouseholdObjectIcon({super.key, required this.shape, this.size = 64});
+
+  final ShapeKind shape;
+  final double size;
+
+  @override
+  Widget build(BuildContext context) => CustomPaint(
+    size: Size.square(size),
+    painter: switch (shape) {
+      ShapeKind.circulo => const _WallClockPainter(),
+      ShapeKind.cuadrado => const _WindowPainter(),
+      ShapeKind.triangulo => const _PizzaSlicePainter(),
+      ShapeKind.rectangulo => const _PhonePainter(),
+    },
+  );
+}
+
 // ═══════════════════════════════════════════════════════════
 // PAINTERS
 // ═══════════════════════════════════════════════════════════
@@ -299,4 +320,286 @@ class _ShapePainter extends CustomPainter {
   @override
   bool shouldRepaint(covariant _ShapePainter old) =>
       old.shape != shape || old.color != color;
+}
+
+// ═══════════════════════════════════════════════════════════
+// OBJETOS DEL HOGAR (figuras geométricas cotidianas)
+// ═══════════════════════════════════════════════════════════
+
+/// Reloj de pared → círculo.
+class _WallClockPainter extends CustomPainter {
+  const _WallClockPainter();
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final c = size.center(Offset.zero);
+    final r = size.width * 0.44;
+
+    // Aro.
+    canvas.drawCircle(c, r, Paint()..color = const Color(0xFF8D5A34));
+    canvas.drawCircle(
+      c,
+      r,
+      Paint()
+        ..color = const Color(0xFF5E3A1E)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = size.width * 0.03,
+    );
+    // Esfera.
+    canvas.drawCircle(c, r * 0.82, Paint()..color = const Color(0xFFFDF8F0));
+
+    // Marcas de las horas.
+    final tick = Paint()
+      ..color = const Color(0xFF6A4C93)
+      ..strokeCap = StrokeCap.round
+      ..strokeWidth = size.width * 0.03;
+    for (var i = 0; i < 12; i++) {
+      final a = i * math.pi / 6;
+      final major = i % 3 == 0;
+      final r1 = r * (major ? 0.58 : 0.66);
+      final r2 = r * 0.74;
+      canvas.drawLine(
+        c + Offset(math.sin(a) * r1, -math.cos(a) * r1),
+        c + Offset(math.sin(a) * r2, -math.cos(a) * r2),
+        tick,
+      );
+    }
+
+    // Manecillas (10:10).
+    final hand = Paint()
+      ..color = const Color(0xFF2B1B45)
+      ..strokeCap = StrokeCap.round;
+    void drawHand(double angle, double len, double width) {
+      hand.strokeWidth = size.width * width;
+      canvas.drawLine(
+        c,
+        c + Offset(math.sin(angle) * r * len, -math.cos(angle) * r * len),
+        hand,
+      );
+    }
+
+    drawHand(-math.pi / 3, 0.42, 0.05); // hora
+    drawHand(math.pi / 3, 0.6, 0.035); // minutos
+    canvas.drawCircle(c, size.width * 0.035, Paint()..color = const Color(0xFFFF6F59));
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+}
+
+/// Ventana → cuadrado.
+class _WindowPainter extends CustomPainter {
+  const _WindowPainter();
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final w = size.width;
+    final h = size.height;
+    final frameRect = RRect.fromRectAndRadius(
+      Rect.fromLTWH(w * 0.1, h * 0.1, w * 0.8, h * 0.8),
+      Radius.circular(w * 0.05),
+    );
+    canvas.drawRRect(frameRect, Paint()..color = const Color(0xFFFFFFFF));
+    canvas.drawRRect(
+      frameRect,
+      Paint()
+        ..color = const Color(0xFF8D5A34)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = w * 0.06,
+    );
+
+    // Cuatro vidrios con cielo.
+    final glass = Paint()
+      ..shader = const LinearGradient(
+        begin: Alignment.topCenter,
+        end: Alignment.bottomCenter,
+        colors: [Color(0xFF8FD8F5), Color(0xFFD6F1FB)],
+      ).createShader(Offset.zero & size);
+    final inner = Rect.fromLTWH(w * 0.16, h * 0.16, w * 0.68, h * 0.68);
+    canvas.drawRRect(
+      RRect.fromRectAndRadius(inner, Radius.circular(w * 0.02)),
+      glass,
+    );
+
+    // Nube.
+    final cloud = Paint()..color = Colors.white.withValues(alpha: 0.9);
+    canvas.drawCircle(Offset(w * 0.36, h * 0.34), w * 0.06, cloud);
+    canvas.drawCircle(Offset(w * 0.43, h * 0.32), w * 0.075, cloud);
+    canvas.drawCircle(Offset(w * 0.51, h * 0.35), w * 0.055, cloud);
+
+    // Travesaños en cruz.
+    final bar = Paint()
+      ..color = const Color(0xFF8D5A34)
+      ..strokeWidth = w * 0.05
+      ..strokeCap = StrokeCap.butt;
+    canvas.drawLine(Offset(w * 0.5, h * 0.16), Offset(w * 0.5, h * 0.84), bar);
+    canvas.drawLine(Offset(w * 0.16, h * 0.5), Offset(w * 0.84, h * 0.5), bar);
+
+    // Repisa.
+    canvas.drawRRect(
+      RRect.fromRectAndRadius(
+        Rect.fromLTWH(w * 0.05, h * 0.86, w * 0.9, h * 0.07),
+        Radius.circular(w * 0.03),
+      ),
+      Paint()..color = const Color(0xFF5E3A1E),
+    );
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+}
+
+/// Pedazo de pizza → triángulo.
+class _PizzaSlicePainter extends CustomPainter {
+  const _PizzaSlicePainter();
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final w = size.width;
+    final h = size.height;
+
+    // Rebanada (punta hacia abajo).
+    final slice = Path()
+      ..moveTo(w * 0.06, h * 0.16)
+      ..lineTo(w * 0.94, h * 0.16)
+      ..lineTo(w * 0.5, h * 0.94)
+      ..close();
+
+    // Queso.
+    canvas.drawPath(slice, Paint()..color = const Color(0xFFFFC21A));
+    canvas.drawPath(
+      slice,
+      Paint()
+        ..color = const Color(0xFFE5A100)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = w * 0.04
+        ..strokeJoin = StrokeJoin.round,
+    );
+
+    // Corteza.
+    final crust = RRect.fromRectAndRadius(
+      Rect.fromLTWH(w * 0.03, h * 0.07, w * 0.94, h * 0.14),
+      Radius.circular(h * 0.07),
+    );
+    canvas.drawRRect(crust, Paint()..color = const Color(0xFFD08A3E));
+    canvas.drawRRect(
+      crust,
+      Paint()
+        ..color = const Color(0xFFA9692A)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = w * 0.025,
+    );
+
+    // Pepperonis.
+    final pep = Paint()..color = const Color(0xFFD7322A);
+    final pepDark = Paint()..color = const Color(0xFFA9211B);
+    void pepperoni(double x, double y, double r) {
+      canvas.drawCircle(Offset(w * x, h * y), w * r, pep);
+      canvas.drawCircle(Offset(w * (x - r * 0.3), h * y - w * r * 0.3), w * r * 0.25, pepDark);
+    }
+
+    pepperoni(0.30, 0.34, 0.08);
+    pepperoni(0.62, 0.36, 0.085);
+    pepperoni(0.47, 0.55, 0.075);
+    pepperoni(0.5, 0.75, 0.05);
+
+    // Hilo de queso.
+    canvas.drawCircle(
+      Offset(w * 0.22, h * 0.25),
+      w * 0.025,
+      Paint()..color = Colors.white.withValues(alpha: 0.6),
+    );
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+}
+
+/// Celular → rectángulo.
+class _PhonePainter extends CustomPainter {
+  const _PhonePainter();
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final w = size.width;
+    final h = size.height;
+
+    // Cuerpo (rectángulo alargado, horizontal para que se note la forma).
+    final body = RRect.fromRectAndRadius(
+      Rect.fromLTWH(w * 0.02, h * 0.22, w * 0.96, h * 0.56),
+      Radius.circular(w * 0.09),
+    );
+    canvas.drawRRect(body, Paint()..color = const Color(0xFF2B1B45));
+    canvas.drawRRect(
+      body,
+      Paint()
+        ..color = const Color(0xFF6A4C93)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = w * 0.025,
+    );
+
+    // Pantalla.
+    final screen = RRect.fromRectAndRadius(
+      Rect.fromLTWH(w * 0.10, h * 0.29, w * 0.74, h * 0.42),
+      Radius.circular(w * 0.04),
+    );
+    canvas.drawRRect(
+      screen,
+      Paint()
+        ..shader = const LinearGradient(
+          colors: [Color(0xFF2EC4B6), Color(0xFF6A4C93)],
+        ).createShader(Offset.zero & size),
+    );
+
+    // Íconos de apps (cuadritos de colores).
+    final colors = [
+      const Color(0xFFFFD23F),
+      const Color(0xFFFF6F59),
+      Colors.white,
+      const Color(0xFFFDF8F0),
+      const Color(0xFFFFD23F),
+      const Color(0xFFFF6F59),
+    ];
+    for (var i = 0; i < 6; i++) {
+      final col = i % 3;
+      final row = i ~/ 3;
+      canvas.drawRRect(
+        RRect.fromRectAndRadius(
+          Rect.fromLTWH(
+            w * (0.17 + col * 0.21),
+            h * (0.35 + row * 0.15),
+            w * 0.13,
+            h * 0.11,
+          ),
+          Radius.circular(w * 0.025),
+        ),
+        Paint()..color = colors[i],
+      );
+    }
+
+    // Botón lateral y cámara.
+    canvas.drawCircle(
+      Offset(w * 0.91, h * 0.5),
+      w * 0.025,
+      Paint()..color = const Color(0xFF6A4C93),
+    );
+    canvas.drawCircle(
+      Offset(w * 0.91, h * 0.33),
+      w * 0.015,
+      Paint()..color = const Color(0xFF8FD8F5),
+    );
+
+    // Brillo.
+    canvas.drawLine(
+      Offset(w * 0.16, h * 0.31),
+      Offset(w * 0.34, h * 0.31),
+      Paint()
+        ..color = Colors.white.withValues(alpha: 0.5)
+        ..strokeWidth = w * 0.015
+        ..strokeCap = StrokeCap.round,
+    );
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
