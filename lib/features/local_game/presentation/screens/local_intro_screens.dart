@@ -170,6 +170,7 @@ class _LocalSetupScreenState extends State<LocalSetupScreen> {
   late int _rounds;
   late bool _extended;
   bool _multiDevice = false;
+  bool _hostPlays = true;
   bool _creating = false;
   String? _error;
 
@@ -183,6 +184,7 @@ class _LocalSetupScreenState extends State<LocalSetupScreen> {
     );
     _rounds = c.totalRounds;
     _extended = c.settings.countMax > ChallengeSettings.basico.countMax;
+    _hostPlays = c.hostPlays;
   }
 
   Future<void> _create() async {
@@ -210,6 +212,7 @@ class _LocalSetupScreenState extends State<LocalSetupScreen> {
       await game.createOnlineRoom(
         totalRounds: _rounds,
         settings: chosenSettings,
+        hostPlays: _hostPlays,
       );
       if (mounted) context.go(LocalRoutes.lobby);
     } catch (e) {
@@ -296,18 +299,48 @@ class _LocalSetupScreenState extends State<LocalSetupScreen> {
                         ),
                       ],
                     ),
-                  ] else
+                  ] else ...[
+                    _label('Este dispositivo'),
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 4),
+                            child: _chip(
+                              'Juega (Mesa 1)',
+                              _hostPlays,
+                              () => setState(() => _hostPlays = true),
+                            ),
+                          ),
+                        ),
+                        Expanded(
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 4),
+                            child: _chip(
+                              'Solo dirige',
+                              !_hostPlays,
+                              () => setState(() => _hostPlays = false),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
                     Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 4),
+                      padding: const EdgeInsets.symmetric(vertical: 2),
                       child: Text(
-                        'Cada mesa se unirá desde su dispositivo con un código.',
+                        _hostPlays
+                            ? 'Este dispositivo será Mesa 1 y los demás se unirán con código.'
+                            : 'Este dispositivo solo dirige la partida; las mesas se unen con código.',
                         style: mateFredoka(
-                          20,
+                          19,
                           color: MateColors.moradoRueda,
                           weight: FontWeight.w500,
                         ),
                       ),
                     ),
+                  ],
                   const SizedBox(height: 18),
                   _label('¿Cuántas rondas?'),
                   const SizedBox(height: 8),
@@ -657,13 +690,32 @@ class _LocalLobbyScreenState extends State<LocalLobbyScreen>
               ),
               const SizedBox(height: 12),
             ],
-            if (game.isOnline && !game.isHost && game.myTeamIndex != null) ...[
+            if (game.isOnline && game.myTeamIndex != null) ...[
               MateOutlinedText(
                 '¡Eres Mesa ${game.myTeamIndex! + 1}!',
                 size: 32,
                 color: MateColors.turquesaOscuro,
               ),
               const SizedBox(height: 8),
+            ],
+            if (game.isOnline && game.isHost) ...[
+              TextButton.icon(
+                onPressed: () => game.setHostPlays(!game.hostPlays),
+                icon: Icon(
+                  game.hostPlays
+                      ? Icons.tablet_android_rounded
+                      : Icons.cast_for_education_rounded,
+                  color: MateColors.moradoVivo,
+                ),
+                label: Text(
+                  game.hostPlays
+                      ? 'Este dispositivo juega como Mesa 1 (toca para solo dirigir)'
+                      : 'Solo dirigiendo sin jugar (toca para ser Mesa 1)',
+                  textAlign: TextAlign.center,
+                  style: mateFredoka(18, color: MateColors.moradoVivo),
+                ),
+              ),
+              const SizedBox(height: 4),
             ],
             MateCard(
               child: Column(

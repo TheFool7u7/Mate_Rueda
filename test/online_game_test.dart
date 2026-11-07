@@ -52,10 +52,14 @@ void main() {
         backend: InMemoryMateRoomBackend(uid: 'mesa-2', shared: rooms),
       );
 
-      final code = await host.createOnlineRoom(totalRounds: 4);
+      final code = await host.createOnlineRoom(
+        totalRounds: 4,
+        hostPlays: false,
+      );
       expect(code.length, roomCodeLength);
       expect(host.isOnline, isTrue);
       expect(host.isHost, isTrue);
+      expect(host.hostPlays, isFalse);
 
       // Código inexistente devuelve false.
       expect(await mesa1.joinOnlineRoom('ZZZZZ'), isFalse);
@@ -131,6 +135,67 @@ void main() {
       mesa1.dispose();
       mesa2.dispose();
     });
+
+    test(
+      '2 dispositivos: anfitrión juega como Mesa 1 + invitado como Mesa 2',
+      () async {
+        final rooms = InMemoryRooms();
+        final cel1 = LocalGameController(
+          random: Random(11),
+          backend: InMemoryMateRoomBackend(uid: 'cel-1', shared: rooms),
+        );
+        final cel2 = LocalGameController(
+          backend: InMemoryMateRoomBackend(uid: 'cel-2', shared: rooms),
+        );
+
+        // Por defecto hostPlays == true: el creador ya es Mesa 1.
+        final code = await cel1.createOnlineRoom(totalRounds: 2);
+        expect(cel1.teams.length, 1);
+        expect(cel1.myTeamIndex, 0);
+
+        // Al unirse el segundo dispositivo se cuentan 2 mesas en ambos.
+        expect(await cel2.joinOnlineRoom(code), isTrue);
+        await Future<void>.delayed(const Duration(milliseconds: 30));
+
+        expect(cel1.teams.length, 2);
+        expect(cel2.teams.length, 2);
+        expect(cel1.myTeamIndex, 0);
+        expect(cel2.myTeamIndex, 1);
+
+        cel1.start();
+        await Future<void>.delayed(const Duration(milliseconds: 20));
+
+        // Ronda 1: turno exclusivo de Mesa 1 (cel1).
+        cel1.drawCategoryIndex();
+        cel1.onSpinFinished();
+        await Future<void>.delayed(const Duration(milliseconds: 20));
+        expect(cel1.isMyTurn, isTrue);
+        expect(cel2.isMyTurn, isFalse);
+        await cel1.submitAnswer(cel1.challenge!.correctIndex);
+        await Future<void>.delayed(const Duration(milliseconds: 20));
+        expect(cel2.phase, LocalPhase.feedback);
+
+        // Ronda 2: turno exclusivo de Mesa 2 (cel2).
+        cel1.next();
+        cel1.drawCategoryIndex();
+        cel1.onSpinFinished();
+        await Future<void>.delayed(const Duration(milliseconds: 20));
+        expect(cel1.isMyTurn, isFalse);
+        expect(cel2.isMyTurn, isTrue);
+        await cel2.submitAnswer(cel2.challenge!.correctIndex);
+        await Future<void>.delayed(const Duration(milliseconds: 30));
+        expect(cel1.phase, LocalPhase.feedback);
+
+        cel1.next();
+        await Future<void>.delayed(const Duration(milliseconds: 20));
+        expect(cel1.phase, LocalPhase.results);
+        expect(cel2.phase, LocalPhase.results);
+        expect(cel1.totalStars, 2);
+
+        cel1.dispose();
+        cel2.dispose();
+      },
+    );
   });
 
   testWidgets('UI permite crear sala multidispositivo y mostrar el código', (

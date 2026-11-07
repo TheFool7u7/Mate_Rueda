@@ -46,6 +46,9 @@ abstract class MateRoomBackend {
   /// Envía la respuesta de esta mesa para la ronda [round].
   Future<void> sendAnswer(String code, {required int round, required int index});
 
+  /// Limpia respuestas previas al iniciar/reiniciar una partida (anfitrión).
+  Future<void> clearAnswers(String code);
+
   /// Respuestas por mesa: `{uid: {round, index}}`.
   Stream<Map<String, Map<String, dynamic>>> watchAnswers(String code);
 }
@@ -84,7 +87,15 @@ class FirebaseMateRoomBackend implements MateRoomBackend {
 
   @override
   Future<void> ensureSignedIn() async {
-    if (_auth.currentUser == null) await _auth.signInAnonymously();
+    final user = _auth.currentUser;
+    if (user == null) {
+      await _auth.signInAnonymously();
+    } else if (!user.isAnonymous) {
+      // Si el celular tenía iniciada una sesión previa con correo o Google,
+      // se cierra para que cada dispositivo tenga su propio UID anónimo único.
+      await _auth.signOut();
+      await _auth.signInAnonymously();
+    }
   }
 
   @override
@@ -110,10 +121,24 @@ class FirebaseMateRoomBackend implements MateRoomBackend {
     await ensureSignedIn();
     final host = await _room(code).child('host').get();
     if (!host.exists) return false;
+
+    // Si este dispositivo compartía UID con el anfitrión o con otra mesa ya
+    // unida (p. ej. respaldo de Android, emulador clonado o sesión previa),
+    // se renueva la sesión anónima para garantizar una mesa independiente.
+    final currentUid = uid;
+    if (currentUid == null || host.value == currentUid) {
+      await _auth.signOut();
+      await _auth.signInAnonymously();
+    } else {
+      final existing = await _room(code).child('members/$currentUid').get();
+      if (existing.exists) {
+        await _auth.signOut();
+        await _auth.signInAnonymously();
+      }
+    }
+
     final ref = _room(code).child('members/$uid');
     await ref.set({'joinedAt': ServerValue.timestamp});
-    // Si el dispositivo se desconecta, la mesa desaparece de la sala.
-    await ref.onDisconnect().remove();
     return true;
   }
 
@@ -140,11 +165,17 @@ class FirebaseMateRoomBackend implements MateRoomBackend {
   Stream<List<String>> watchMembers(String code) =>
       _room(code).child('members').onValue.map((event) {
         final map = _asMap(event.snapshot.value) ?? const {};
+        num joinedAtOf(Object? v) {
+          if (v is Map) {
+            final raw = v['joinedAt'];
+            if (raw is num) return raw;
+          }
+          return 0;
+        }
+
         final entries = map.entries.toList()
           ..sort((a, b) {
-            final ta = (a.value is Map ? (a.value as Map)['joinedAt'] : 0) ?? 0;
-            final tb = (b.value is Map ? (b.value as Map)['joinedAt'] : 0) ?? 0;
-            final c = (ta as num).compareTo(tb as num);
+            final c = joinedAtOf(a.value).compareTo(joinedAtOf(b.value));
             return c != 0 ? c : a.key.compareTo(b.key);
           });
         return [for (final e in entries) e.key];
@@ -160,6 +191,9 @@ class FirebaseMateRoomBackend implements MateRoomBackend {
     'index': index,
     'at': ServerValue.timestamp,
   });
+
+  @override
+  Future<void> clearAnswers(String code) => _room(code).child('answers').remove();
 
   @override
   Stream<Map<String, Map<String, dynamic>>> watchAnswers(String code) =>
@@ -286,6 +320,14 @@ class InMemoryMateRoomBackend implements MateRoomBackend {
     room.answersCtrl.add({
       for (final e in room.answers.entries) e.key: Map.of(e.value),
     });
+  }
+
+  @override
+  Future<void> clearAnswers(String code) async {
+    final room = _rooms._rooms[code];
+    if (room == null) return;
+    room.answers.clear();
+    room.answersCtrl.add(const {});
   }
 
   @override

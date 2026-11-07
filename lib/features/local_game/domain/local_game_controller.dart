@@ -74,6 +74,8 @@ class LocalGameController extends ChangeNotifier {
   MateRoomBackend? _backend;
   bool _isOnline = false;
   bool _isHost = true;
+  bool _hostPlays = true;
+  List<String> _memberUids = const [];
   String? _roomCode;
   int? _myTeamIndex;
   int spinTrigger = 0;
@@ -97,9 +99,14 @@ class LocalGameController extends ChangeNotifier {
   /// `true` si este dispositivo conduce la partida (docente / proyector).
   bool get isHost => !_isOnline || _isHost;
 
+  /// `true` si en modo varios dispositivos el anfitrión también participa como
+  /// Mesa 1 (`false` si solo proyecta / dirige).
+  bool get hostPlays => _hostPlays;
+
   /// `true` si este dispositivo puede responder el reto actual.
   bool get isMyTurn {
-    if (!_isOnline || _isHost) return true;
+    if (!_isOnline) return true;
+    if (_isHost && !_hostPlays) return true;
     return _myTeamIndex != null && _myTeamIndex == currentTeamIndex;
   }
 
@@ -193,9 +200,14 @@ class LocalGameController extends ChangeNotifier {
 
   /// Crea una sala compartida donde la docente es anfitriona y las mesas se
   /// conectan con un código de 5 caracteres.
+  ///
+  /// Si [hostPlays] es `true` (por defecto), el propio dispositivo creador
+  /// participa como `Mesa 1` y los dispositivos que se unan serán `Mesa 2`,
+  /// `Mesa 3`, etc. Si es `false`, el anfitrión solo dirige/proyecta.
   Future<String> createOnlineRoom({
     int? totalRounds,
     ChallengeSettings? settings,
+    bool hostPlays = true,
     MateRoomBackend? backend,
   }) async {
     _cancelSubscriptions();
@@ -208,15 +220,16 @@ class LocalGameController extends ChangeNotifier {
 
     _isOnline = true;
     _isHost = true;
+    _hostPlays = hostPlays;
+    _memberUids = const [];
     _roomCode = code;
-    _myTeamIndex = null;
     round = 0;
     currentTeamIndex = 0;
     spinTrigger = 0;
     syncLatenciesMs.clear();
-    teams = [];
     _resetRound();
     phase = LocalPhase.lobby;
+    _rebuildOnlineTeams();
 
     _membersSub = _backend!.watchMembers(code).listen(_onMembersChanged);
     _answersSub = _backend!.watchAnswers(code).listen(_onAnswersChanged);
@@ -224,6 +237,43 @@ class LocalGameController extends ChangeNotifier {
     await _publishIfHost();
     notifyListeners();
     return code;
+  }
+
+  /// Permite alternar en la sala de espera si el dispositivo anfitrión también
+  /// participa como `Mesa 1` o si únicamente dirige la partida.
+  void setHostPlays(bool value) {
+    if (!_isOnline || !_isHost || phase != LocalPhase.lobby) return;
+    if (_hostPlays == value) return;
+    _hostPlays = value;
+    _rebuildOnlineTeams();
+    _publishIfHost();
+    notifyListeners();
+  }
+
+  void _rebuildOnlineTeams() {
+    final hostUid = _backend?.uid;
+    final orderedUids = <String>[
+      if (_hostPlays && hostUid != null) hostUid,
+      for (final u in _memberUids)
+        if (u != hostUid) u,
+    ].take(maxTeams).toList();
+
+    teams = [
+      for (var i = 0; i < orderedUids.length; i++)
+        TeamScore(
+          name: 'Mesa ${i + 1}',
+          color: teamColors[i % teamColors.length],
+          uid: orderedUids[i],
+        ),
+    ];
+    teamCount = teams.length;
+    _myTeamIndex =
+        (_hostPlays &&
+            hostUid != null &&
+            orderedUids.isNotEmpty &&
+            orderedUids.first == hostUid)
+        ? 0
+        : null;
   }
 
   /// Une este dispositivo como una mesa a la sala con código [rawCode].
@@ -254,19 +304,11 @@ class LocalGameController extends ChangeNotifier {
 
   void _onMembersChanged(List<String> memberUids) {
     if (!_isOnline || !_isHost) return;
-    // En la sala de espera la lista de mesas se arma con los dispositivos
-    // conectados (máximo 6 mesas).
+    _memberUids = List.of(memberUids);
+    // En la sala de espera la lista de mesas se arma con el anfitrión (si
+    // participa) más los dispositivos conectados (máximo 6 mesas).
     if (phase == LocalPhase.lobby) {
-      final limited = memberUids.take(maxTeams).toList();
-      teams = [
-        for (var i = 0; i < limited.length; i++)
-          TeamScore(
-            name: 'Mesa ${i + 1}',
-            color: teamColors[i % teamColors.length],
-            uid: limited[i],
-          ),
-      ];
-      teamCount = teams.length;
+      _rebuildOnlineTeams();
       _publishIfHost();
       notifyListeners();
     }
@@ -394,6 +436,9 @@ class LocalGameController extends ChangeNotifier {
     currentTeamIndex = 0;
     _resetRound();
     phase = LocalPhase.spinning;
+    if (_isOnline && _isHost && _roomCode != null && _backend != null) {
+      _backend!.clearAnswers(_roomCode!).catchError((_) {});
+    }
     _publishIfHost();
     notifyListeners();
   }

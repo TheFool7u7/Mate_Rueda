@@ -26,8 +26,9 @@ class LocalChallengeScreen extends StatelessWidget {
       return const SizedBox.shrink();
     }
     final team = game.currentTeam;
-    final canAnswer = game.isMyTurn || game.isHost;
-    final turnLabel = game.isOnline && !game.isHost
+    final canAnswer = game.isMyTurn;
+    final hasOwnMesa = game.isOnline && game.myTeamIndex != null;
+    final turnLabel = hasOwnMesa
         ? (game.isMyTurn
               ? '¡Tu turno, ${team.name}!'
               : 'Turno de ${team.name}')
