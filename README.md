@@ -61,3 +61,14 @@ flutter test
 flutter build apk --release
 ```
 El instalador se genera en `build/app/outputs/flutter-apk/app-release.apk`.
+
+---
+
+## 📚 Documentación Técnica (`/docs`)
+
+1. [Guía de Instalación, Pruebas y Despliegue](docs/INSTALACION.md)
+2. [Arquitectura del Proyecto](docs/ARQUITECTURA.md)
+3. [Documentación de Firebase y Seguridad](docs/FIREBASE.md)
+4. [Flujo Pedagógico y Lógico del Juego](docs/FLUJO_DE_JUEGO.md)
+5. [Mapa de Pantallas y Navegación](docs/PANTALLAS.md)
+6. [Paquetes y Dependencias (y cumplimiento RNF03)](docs/PAQUETES.md)

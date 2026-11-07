@@ -1,76 +1,52 @@
-# Flujo del Juego
+# Flujo Pedagógico y Lógico del Juego — MateRueda
 
-Este documento detalla el ciclo de vida completo de una partida en `Word Wonders Link`. El sistema está manejado casi exclusivamente a través del estado de la Realtime Database (`GamePhase`) coordinando clientes de forma simultánea.
-
-## Fases del Juego (GamePhase)
-
-La enumeración `GamePhase` rige en qué pantalla están los jugadores y qué pueden hacer. La transición entre fases suele estar orquestada por el Host, o automáticamente cuando el contador llega a 0.
-
-### 1. `idle` (Lobby)
-- **Vista**: Pantalla `LobbyScreen`.
-- **Qué ocurre**: Los jugadores se unen introduciendo el código de la sala de 6 dígitos.
-- **Base de Datos**: Los nuevos UIDs se agregan a la lista de jugadores de Firestore y se crean los nodos base en RTDB (con `isConnected: true`).
-- **Transición**: El Host de la sala presiona "Iniciar Juego". El backend inicializa las letras del abecedario, asume una categoría inicial, y cambia el `status` de la sala a `playing` y la fase RTDB a `selecting`.
-
-### 2. `selecting` (Ruleta de Letras)
-- **Vista**: `GameScreen` con el componente `LetterWheelWidget`.
-- **Qué ocurre**: Todos los jugadores ven la categoría actual y las letras del abecedario. Presionan el botón para girar su propia ruleta e intentan capturar una letra.
-- **Base de Datos**: 
-  - Aquí actúa el **Sistema de Concurrencia Seguro**. Al intentar bloquear una letra, el cliente lanza una transacción atómica a Firebase (`runTransaction`).
-  - Si 2 jugadores caen en la letra "A" en el mismo milisegundo, la transacción asegura que solo el primer servidor reciba un éxito; el segundo cliente hace un rollback instantáneo.
-- **Transición**: Cuando todas las letras disponibles para una categoría se agotan, o se cumple un tiempo límite, el juego transiciona a la fase `answering` seleccionando a un jugador aleatorio o al primero en la cola.
-
-### 3. `answering` (Fase de Respuesta)
-- **Vista**: `AnsweringScreen`.
-- **Qué ocurre**: 
-  - El jugador "Activo" (`activePlayer`) tiene en pantalla un teclado virtual y debe escribir una palabra que comience con la letra ganada, perteneciente a la categoría vigente (Ej: Animal con P → "Perro").
-  - El resto de los jugadores ("Espectadores") ven una pantalla de "Esperando respuesta de [Usuario]..." y escuchan un audio de reloj ("tick-tock") para generar tensión.
-- **Base de Datos**: Un temporizador se guarda en RTDB (`timerEnd`) y todos los clientes lo usan para descontar el reloj sincronizadamente.
-- **Transición**: Ocurre si el jugador Activo envía una palabra antes de que el contador acabe, o si el tiempo llega a 0. Pasamos a la fase de `evaluating`.
-
-### 4. `evaluating` (Sistema de Votación Seguro)
-- **Vista**: `EvaluationScreen`.
-- **Qué ocurre**: 
-  - La palabra que ingresó el jugador Activo se envía al resto de los jugadores para ser evaluada.
-  - Los oponentes califican la respuesta del 1 al 10 y otorgan un nivel de calidad (Común, Excelente, Sorprendente).
-- **Base de Datos**: 
-  - Los votos NO se escriben directamente sobre el puntaje del jugador evaluado (por seguridad).
-  - En su lugar, se guardan en un registro de la base de datos (o subcolección). Un Cloud Function (o el Host como fallback) promedia estos votos y de manera segura asigna el puntaje en el nodo de ese jugador.
-- **Transición**: Cuando todos los espectadores emiten su voto, la aplicación muestra el puntaje asignado, reproduce un audio ("positivo" o "negativo") y regresa a `selecting` para el siguiente turno.
-
-### 5. `punishment` (Fase de Castigos)
-- **Vista**: `PunishmentScreen`.
-- **Cuándo ocurre**: Si al final de todas las rondas preestablecidas, un jugador queda en último lugar con el puntaje más bajo.
-- **Qué ocurre**: 
-  - El perdedor es forzado a realizar un castigo generado aleatoriamente.
-  - Tipos de castigos:
-    1. **Tomar Selfie**: Usando el paquete `camera`, captura su rostro en tiempo real.
-    2. **Cantar**: Usando el paquete `record`, graba 10 segundos de audio cantando.
-    3. **Encontrar un Color**: La app le asigna un color RGB, y con la cámara trasera debe enfocar un objeto de ese color exacto.
-  - Los otros jugadores ven una pantalla de espera y escuchan un loop de risas de fondo (`risas.wav`).
-- **Base de Datos**: 
-  - Cuando el perdedor completa el castigo, el archivo multimedia se sube a **Firebase Storage**.
-  - La URL del archivo se guarda en RTDB en la variable `punishmentMediaUrl`.
-- **Transición**: Cuando Firebase avisa a todos los clientes que el `punishmentMediaUrl` ya no es nulo, los espectadores visualizan o escuchan el castigo, y el juego pasa a `results`.
-
-### 6. `results` (Final de la Partida)
-- **Vista**: `ResultsScreen`.
-- **Qué ocurre**: 
-  - Se muestra la tabla de posiciones (Leaderboard local de la sala).
-  - El primer lugar escucha un audio de triunfo (`win.mp3`), mientras que los perdedores escuchan un audio de derrota (`perdedor.m4a`).
-  - Animaciones de medallas (Oro, Plata, Bronce).
-- **Base de Datos**: 
-  - Se escriben los puntajes finales en el historial de los perfiles de Firestore.
-  - El Host cambia el `status` principal de la sala a `finished`.
-  - La sala se destruye o limpia de RTDB.
-- **Fin del Flujo**: El usuario puede regresar a `HomeScreen`.
+Este documento describe el ciclo completo de una sesión de **MateRueda**, tanto en modalidad **📱 1 dispositivo** (turnos rotativos en aula) como en modalidad **🌐 Varios dispositivos** (sincronizada en tiempo real).
 
 ---
 
-## Patrones de UX Críticos
+## Fases de la Partida (`LocalPhase`)
 
-### Optimistic UI y Rollback
-Cuando un usuario bloquea una letra, la UI se actualiza inmediatamente poniéndola de color azul (asumiendo que la ganó). Si en los milisegundos siguientes Firebase rechaza la transacción porque otro jugador la tomó primero, la UI hace un *rollback* silencioso, cambiando la letra a rojo y bloqueándola para el usuario local, todo sin interrumpir gravemente la experiencia.
+```mermaid
+flowchart LR
+    L["1. Lobby (Sala de espera)"] --> S["2. Spinning (Giro de ruleta)"]
+    S --> C["3. Challenge (Reto matemático)"]
+    C --> F["4. Feedback (Retroalimentación positiva)"]
+    F -->|Quedan rondas| S
+    F -->|Última ronda| R["5. Results (Podio y total grupal)"]
+```
 
-### El Rol del Host
-Para evitar conflictos de estado (donde dos teléfonos intenten cambiar el estado de la RTDB al mismo tiempo), el juego asigna la "autoridad" de transiciones críticas exclusivamente al dispositivo cuyo UID coincida con el `hostUid` (el creador de la sala). Si el creador se desconecta, se deberá prever una mecánica de "Host Migration".
+### 1. Configuración y Sala de Espera (`lobby`)
+- La persona docente elige la modalidad (**1 dispositivo** o **Varios dispositivos**), el número de rondas (`5`, `8`, `10` o `12`), el nivel numérico (**Básico hasta 10** o **Ampliado hasta 20**) y las categorías activas (**RF01, RF10**).
+- En **1 dispositivo**, la docente define cuántas mesas participarán (2 a 4).
+- En **Varios dispositivos**, se genera un código de 6 caracteres (ej. `K7M4P9`) y cada mesa se une desde su tableta/teléfono eligiendo su nombre y color de equipo.
+
+### 2. Ruleta de Categorías (`spinning`)
+- La pantalla presenta una ruleta colorida dividida en las **5 categorías matemáticas** activas (**RF02**).
+- Al girar:
+  - En modo online, el anfitrión dispara `spinNonce` y selecciona la categoría destino para que **todos los dispositivos giren simultáneamente** con animación desacelerada y sonido suave de giro (`25 %` de volumen).
+  - Al detenerse la aguja, `TtsService` anuncia en voz alta la categoría obtenida y avanza al reto.
+
+### 3. Reto Matemático (`challenge`)
+`MathChallengeGenerator` construye un reto visual con una consigna breve de una línea leída automáticamente en voz alta (**RF03, RNF01, RNF02**):
+
+1. **Conteo (OA1)**: Colección de 1 a 10 (o hasta 20) objetos ilustrados; la mesa elige el número correspondiente.
+2. **Suma (OA2)**: Dos grupos visuales de objetos unidos por el signo `+`; la mesa toca el resultado correcto.
+3. **Resta (OA3)**: Colección visual donde los elementos restados aparecen marcados suavemente; la mesa selecciona cuántos quedan.
+4. **Comparación (OA4)**: Dos grupos lado a lado (`◀` izquierda, `=` igual cantidad, `▶` derecha).
+5. **Figuras geométricas con objetos cotidianos del hogar (OA5)**: Alterna automáticamente dos variantes pedagógicas:
+   - **Variante A (Objeto → Figura)**: Muestra un objeto cotidiano (*el reloj de pared*, *la ventana*, *el pedazo de pizza* o *el celular*) y pregunta qué forma geométrica tiene.
+   - **Variante B (Figura → Objeto)**: Muestra una figura geométrica (*círculo*, *cuadrado*, *triángulo* o *rectángulo*) y pregunta cuál objeto cotidiano tiene esa forma.
+
+- **Control de turnos**: En modo multidispositivo, únicamente la mesa que tiene el turno activo tiene habilitados los botones de opción (**RF04**), mientras el resto del aula observa el mismo reto en tiempo real para apoyar colaborativamente (**OA6**).
+
+### 4. Retroalimentación Positiva (`feedback`)
+- Validación inmediata (**RF05**) y acompañamiento afectivo (**RF06, RF07**):
+  - **Si acierta**: Mensaje entusiasta (*"¡Muy bien, Mesa Sol!"*), narración por voz, sonido alegre y suma de **+1 estrella** al marcador del equipo (**RF08**).
+  - **Si no acierta**: Mensaje empático **nunca punitivo** (*"¡Casi! Buen intento"*), sonido neutro suave y visualización clara de la respuesta correcta para reforzar el aprendizaje.
+- La persona docente (o la mesa en modo 1 dispositivo) pulsa **Siguiente ronda** para continuar (**RF10**).
+
+### 5. Resultados y Celebración Grupal (`results`)
+- Al completar todas las rondas configuradas (**RF09**):
+  - Se muestra el **total animado de estrellas logradas por toda el aula** para reforzar el logro colectivo (**OA6**).
+  - Se presenta el podio de mesas con medallas e insignias positivas para todos los equipos participantes.
+  - En partidas multidispositivo se muestra el indicador de cumplimiento **RNF05** con el porcentaje de eventos sincronizados en $\le 3\text{ s}$ y la latencia promedio en milisegundos.

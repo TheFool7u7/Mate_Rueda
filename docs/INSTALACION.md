@@ -1,107 +1,93 @@
-# Guía de Instalación y Despliegue
+# Guía de Instalación, Pruebas y Despliegue — MateRueda
 
-Esta guía proporciona los pasos detallados para configurar, compilar y desplegar `Word Wonders Link` desde cero en un entorno de desarrollo local.
+Esta guía detalla los pasos para instalar, ejecutar, probar y compilar **MateRueda** en un entorno de desarrollo local, así como la configuración en Firebase para las sesiones multidispositivo en el aula.
+
+---
 
 ## Requisitos Previos
 
-Antes de comenzar, asegúrate de tener instalado el siguiente software en tu máquina:
+- **Flutter SDK**: Versión `^3.9.2` o superior (incluye Dart SDK).
+- **IDE**: Visual Studio Code o Android Studio con los plugins de Flutter y Dart.
+- **Android SDK**: API 21+ (Android 5.0 o superior, cumpliendo **RNF04** para teléfonos y tabletas de gama media).
+- *(Opcional para administración de backend)*: **Node.js 18+** y **Firebase CLI** (`npm install -g firebase-tools`).
 
-- **Flutter SDK**: Versión `^3.9.2` o superior.
-- **Dart SDK**: Incluido con Flutter.
-- **IDE**: Android Studio, IntelliJ IDEA, o Visual Studio Code con los plugins de Flutter/Dart instalados.
-- **Node.js y npm**: Necesarios para desplegar las Cloud Functions (versión 16+ recomendada).
-- **Firebase CLI**: Herramienta de línea de comandos de Firebase (`npm install -g firebase-tools`).
+---
 
-## Pasos de Instalación Local
+## Instalación Local
 
 ### 1. Clonar el repositorio
 ```bash
-git clone <URL_DEL_REPOSITORIO>
-cd wordwonderslink
+git clone https://github.com/TheFool7u7/Mate_Rueda.git
+cd Mate_Rueda
 ```
 
 ### 2. Instalar dependencias
-Descarga e instala todos los paquetes requeridos por el proyecto:
 ```bash
 flutter pub get
 ```
 
-### 3. Configurar credenciales de Firebase
-Para que la app se conecte al backend, necesitas el archivo de configuración nativo.
-1. Ve a la consola de Firebase y selecciona el proyecto.
-2. Ve a **Project Settings** > **General**.
-3. Descarga el archivo `google-services.json` para la aplicación Android.
-4. Ubica este archivo en el directorio: `android/app/google-services.json`.
-
-### 4. Compilar y ejecutar
-Conecta un dispositivo físico Android o inicia un emulador, y ejecuta:
+### 3. Ejecutar la aplicación
+Conecta un dispositivo físico Android (con depuración USB activa) o abre un emulador y ejecuta:
 ```bash
 flutter run
 ```
 
----
-
-## Configurar Firebase desde cero
-
-Si vas a levantar un backend de Firebase completamente nuevo para este proyecto, sigue estos pasos:
-
-### 1. Crear el Proyecto en Firebase Console
-- Accede a [Firebase Console](https://console.firebase.google.com/) y crea un proyecto nuevo.
-- Habilita Google Analytics (opcional pero recomendado).
-
-### 2. Habilitar Servicios
-Debes activar explícitamente los siguientes servicios en la consola:
-- **Authentication**: Habilita los proveedores de **Correo/Contraseña** y **Google**.
-- **Cloud Firestore**: Crea la base de datos en modo producción.
-- **Realtime Database**: Crea la base de datos y elige la región.
-- **Storage**: Inicia tu bucket de almacenamiento.
-
-### 3. Desplegar Cloud Functions y Reglas
-Inicia sesión en Firebase CLI desde tu terminal:
-```bash
-firebase login
-```
-Vincula tu proyecto local con el de Firebase:
-```bash
-firebase use --add <TU_PROJECT_ID>
-```
-Despliega las reglas de seguridad y las funciones en la nube:
-```bash
-# Desplegar reglas de Firestore, RTDB y Storage
-firebase deploy --only firestore:rules,database:rules,storage:rules
-
-# Desplegar las Cloud Functions
-firebase deploy --only functions
-```
-
-### 4. Configurar variables base en Firestore
-Para que la app lea la versión mínima soportada, debes crear un documento de configuración inicial en Firestore.
-- **Colección**: `config`
-- **Documento**: `app`
-- **Campos**:
-  - `minVersion` (String): `"1.0.0"`
-  - `downloadUrl` (String): `"https://tu-url-de-descarga.com"`
+> **Nota sobre conectividad:**
+> - El modo **📱 1 dispositivo** funciona **100 % sin conexión a internet**, ideal para aulas sin cobertura Wi-Fi o sesiones proyectadas en pizarra.
+> - El modo **🌐 Varios dispositivos** utiliza Firebase Authentication (Anónimo) y Firebase Realtime Database para sincronizar la partida en tiempo real entre el dispositivo docente y las mesas.
 
 ---
 
-## Comandos Útiles
+## Configuración de Firebase (Modo Multidispositivo)
 
-A continuación, una lista de comandos frecuentes durante el desarrollo:
+El repositorio incluye `lib/firebase_options.dart` y `android/app/google-services.json` apuntando al proyecto de Firebase configurado. Si deseas conectar un proyecto nuevo desde cero:
 
-**Ejecución y Depuración**
+1. **Crear proyecto en [Firebase Console](https://console.firebase.google.com/)**.
+2. **Authentication → Sign-in method**:
+   - Habilitar el proveedor **Anónimo (Anonymous)** para permitir que las mesas de primer grado se conecten sin recolectar correos ni datos personales (**RNF03**).
+3. **Realtime Database**:
+   - Crear la instancia de Realtime Database.
+   - En la pestaña **Reglas**, pegar el contenido del archivo `database.rules.json` del repositorio y pulsar **Publicar**.
+4. *(Opcional)* Desplegar reglas y Cloud Functions por consola:
+   ```bash
+   firebase login
+   firebase deploy --only database,firestore:rules,functions
+   ```
+
+---
+
+## Ejecución de Pruebas Automatizadas y Análisis Estático
+
+El proyecto cuenta con pruebas unitarias, de widgets y de sincronización multidispositivo en la carpeta `test/`:
+
 ```bash
-flutter run                  # Corre la app en modo debug
-flutter run --release        # Corre la app en modo release (optimizado)
+# Ejecutar toda la suite de pruebas (17 pruebas automatizadas)
+flutter test
+
+# Ejecutar una suite específica
+flutter test test/figuras_objetos_test.dart
+flutter test test/generador_retos_test.dart
+flutter test test/local_game_test.dart
+flutter test test/online_game_test.dart
+
+# Verificar calidad de código y cero advertencias
+flutter analyze
 ```
 
-**Generación de APK (Producción)**
+---
+
+## Compilación de Producción (APK / App Bundle)
+
 ```bash
-flutter build apk --release  # Genera el instalador APK en build/app/outputs/flutter-apk/
-flutter build appbundle      # Genera el AAB para subir a la Google Play Store
+# Generar instalador APK optimizado (Android)
+flutter build apk --release
+
+# Generar Android App Bundle (AAB)
+flutter build appbundle --release
+
+# Regenerar íconos de lanzador desde assets/images/materueda/logotipo.png
+dart run flutter_launcher_icons
 ```
 
-**Gestión de Firebase**
-```bash
-firebase deploy --only functions         # Actualiza solo las Cloud Functions
-firebase deploy --only firestore:rules   # Actualiza solo las reglas de Firestore
-```
+El archivo APK listo para instalar se genera en:
+`build/app/outputs/flutter-apk/app-release.apk`

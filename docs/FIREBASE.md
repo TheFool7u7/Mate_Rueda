@@ -1,111 +1,99 @@
-# Documentación de Firebase
+# Documentación de Firebase y Seguridad — MateRueda
 
-Word Wonders Link utiliza Firebase como backend Serverless (BaaS). El proyecto emplea una arquitectura de datos dual, combinando la persistencia y consultas de **Cloud Firestore** con la baja latencia y sincronización instantánea de **Realtime Database**.
-
-## Servicios Utilizados
-
-- **Firebase Authentication**: Autenticación de usuarios mediante Email/Contraseña y Google Sign-In.
-- **Cloud Firestore**: Base de datos de documentos para guardar perfiles, historial de partidas, salas creadas y ranking global.
-- **Firebase Realtime Database (RTDB)**: Base de datos en tiempo real utilizada exclusivamente para el motor del juego activo (fases, bloqueo atómico de letras, temporizadores, estado de conexión).
-- **Firebase Storage**: Almacenamiento de archivos binarios (fotos y audios) generados durante la fase de castigos.
-- **Cloud Functions**: Funciones backend en NodeJS utilizadas para asegurar transacciones críticas y limpiar archivos temporales (ej. agregación de votos, eliminación de castigos tras 24h).
+**MateRueda** utiliza Firebase como backend Serverless opcional para habilitar el modo **🌐 Varios dispositivos**, manteniendo al mismo tiempo un modo **📱 1 dispositivo** completamente autónomo sin internet.
 
 ---
 
-## Estructura de Cloud Firestore
+## Servicios Activos
 
-### Colección: `/users/{uid}`
-Almacena el perfil de los usuarios autenticados.
-- `uid` (String): ID único del usuario de Auth.
-- `username` (String): Alias del jugador (mínimo 6, máximo 12 caracteres).
-- `email` (String): Correo electrónico asociado.
-- `avatarUrl` (String): URL de la imagen de perfil (opcional).
-- `totalPoints` (Number): Puntos totales acumulados en su historia.
-- `gamesPlayed` (Number): Partidas jugadas totales.
-- `gamesWon` (Number): Partidas ganadas.
-- `createdAt` (Timestamp): Fecha de registro en la app.
-- `isDisabled` (Boolean): Bandera de baneo/desactivación.
-
-### Colección: `/rooms/{roomCode}`
-Registra el historial y configuración de las salas.
-- `roomCode` (String): Código alfanumérico único de 6 caracteres (ej. "A4XT9B").
-- `hostUid` (String): UID del creador de la sala.
-- `maxPlayers` (Number): Límite de jugadores en la sala (default: 4).
-- `timePerTurn` (Number): Tiempo en segundos por turno (default: 30).
-- `status` (String): Estado global (`waiting`, `playing`, `finished`).
-- `players` (Array<Map>): Lista embebida de `PlayerRef` (uid, username, avatarUrl) para lectura rápida.
-- `createdAt` (Timestamp): Momento de creación.
-
-*(Nota: En versiones más avanzadas, de aquí pueden colgar subcolecciones como `/rounds` o `/responses` si se requiere auditar el juego post-partida)*
-
-### Colección: `/leaderboard/{uid}`
-Documentos proyectados para consultas ultrarrápidas del Top global.
-- `username` (String)
-- `totalPoints` (Number)
-
-### Colección: `/config/app`
-Configuraciones maestras de la aplicación.
-- `minVersion` (String): Versión mínima soportada (ej. "1.0.0").
-- `downloadUrl` (String): Enlace para actualizar la aplicación si está desactualizada.
-
-### Colección: `/admins/{uid}`
-Privilegios de acceso para paneles de administración.
-- `email` (String)
-- `role` (String)
+1. **Firebase Authentication (Proveedor Anónimo)**:
+   - Cada dispositivo que crea o se une a una sala obtiene automáticamente un `uid` anónimo temporal (`signInAnonymously()`).
+   - **Cumplimiento RNF03**: No se solicitan nombres reales, correos electrónicos, fotografías ni grabaciones de voz a los estudiantes de primer grado; únicamente se emplean nombres de equipo genéricos (*Mesa Sol*, *Mesa Luna*, *Mesa Estrella*, *Mesa Cometa*).
+2. **Firebase Realtime Database (RTDB)**:
+   - Sincroniza en milisegundos el estado de la partida bajo el nodo `/mate/{code}` para cumplir holgadamente con **RNF05** (al menos 9 de cada 10 acciones reflejadas en $\le 3\text{ s}$).
+3. **Firebase Storage — Deshabilitado (RNF03)**:
+   - No se almacena ningún archivo multimedia de usuarios.
 
 ---
 
-## Estructura de Realtime Database (Estado en Vivo)
+## Estructura en Realtime Database (`/mate/{code}`)
 
-El motor del juego reside bajo el nodo principal `/games/{roomCode}`.
+Cada sala activa se identifica mediante un código alfanumérico de 6 caracteres (ej. `K7M4P9`):
 
-### Nodo: `/games/{roomCode}/state`
-Controla el reloj global y el flujo de la ronda.
-- `phase` (String): Fase actual (`selecting`, `answering`, `evaluating`, `punishment`, `results`).
-- `currentLetter` (String): La letra seleccionada para esta ronda.
-- `currentCategory` (String): La categoría en juego.
-- `roundId` (String): ID temporal de la ronda.
-- `timerEnd` (Number): Epoch timestamp de cuándo termina el contador.
-- `activePlayer` (String): UID del jugador que tiene el turno.
-- `loserUid` (String): UID del perdedor de la partida (solo en fase `punishment`).
-- `finalScores` (Map<String, Number>): Mapa de UIDs a puntajes finales (solo en fase `results`).
-- `punishmentMediaUrl` (String): URL del castigo subido a Storage.
-- `punishmentType` (String): Tipo de castigo (`selfie`, `audio`, `color`).
-- `punishmentTargetColor` (String): Si el castigo es color, guarda el color asignado.
+```json
+{
+  "mate": {
+    "K7M4P9": {
+      "hostUid": "uid_docente_anonimo",
+      "createdAt": 1762490000000,
+      "state": {
+        "phase": "challenge",
+        "round": 2,
+        "totalRounds": 8,
+        "turnIndex": 1,
+        "level": "basico",
+        "categories": ["conteo", "suma", "resta", "comparacion", "figuras"],
+        "selectedCategory": "figuras",
+        "spinNonce": 2,
+        "challenge": {
+          "category": "figuras",
+          "question": "¿Qué forma tiene el reloj de pared?",
+          "visual": "figura",
+          "object": "manzana",
+          "countA": 0,
+          "countB": 0,
+          "shape": "circulo",
+          "shapeAsObject": true,
+          "options": [
+            { "label": "Círculo", "shape": "circulo", "asObject": false },
+            { "label": "Triángulo", "shape": "triangulo", "asObject": false },
+            { "label": "Rectángulo", "shape": "rectangulo", "asObject": false }
+          ],
+          "correctIndex": 0
+        },
+        "lastSelectedOption": null,
+        "lastWasCorrect": null,
+        "scores": [2, 1],
+        "sentAt": 1762490015230
+      },
+      "members": {
+        "uid_mesa_1": {
+          "name": "Mesa Sol",
+          "colorIndex": 0,
+          "joinedAt": 1762490004000
+        },
+        "uid_mesa_2": {
+          "name": "Mesa Luna",
+          "colorIndex": 1,
+          "joinedAt": 1762490006500
+        }
+      },
+      "answer": {
+        "round": 2,
+        "turnIndex": 1,
+        "optionIndex": 0,
+        "teamUid": "uid_mesa_2",
+        "sentAt": 1762490018900
+      }
+    }
+  }
+}
+```
 
-### Nodo: `/games/{roomCode}/letters/{char}`
-El abecedario del juego (A-Z). Se usa `runTransaction()` aquí para evitar condiciones de carrera (dos jugadores girando la ruleta y agarrando la misma letra a la vez).
-- `status` (String): Estado de la letra (`free`, `locked`, `used`).
-- `lockedBy` (String): UID de quien ganó la letra.
-- `lockedByUsername` (String): Alias del jugador que la bloqueó.
+### Descripción de subnodos
 
-### Nodo: `/games/{roomCode}/players/{uid}`
-Estado en vivo de la conexión y puntaje temporal.
-- `roundScore` (Number): Puntos ganados en la ronda actual.
-- `isConnected` (Boolean): Manejado por OnDisconnect hooks de Firebase para saber si el jugador se salió.
+- **`hostUid`**: UID anónimo del dispositivo de la persona docente que controla el inicio de la partida y el avance de rondas (**RF10**).
+- **`state`**: Fuente única de verdad de la partida (`lobby`, `spinning`, `challenge`, `feedback`, `results`), categoría actual, reto serializado, puntajes por mesa y marca de tiempo `sentAt` para calcular la latencia de sincronización (**RNF05**).
+- **`members/{uid}`**: Mesas conectadas en la sala de espera junto con su nombre de equipo e índice de color.
+- **`answer`**: Respuesta enviada por la mesa en turno; el dispositivo anfitrión la procesa de forma atómica, valida si es correcta (**RF05**), acredita la estrella correspondiente (**RF07 / RF08**) y publica la fase `feedback`.
 
 ---
 
-## Cloud Functions
+## Reglas de Seguridad (`database.rules.json`)
 
-1. **`onVoteWrite`**: (Trigger de Firestore o RTDB, según subcolección). Se dispara cuando los jugadores envían sus calificaciones (0-10 o calidad) a una respuesta. La función consolida los votos y calcula el promedio, escribiéndolo de vuelta en el score del jugador. Esto evita que los clientes modifiquen maliciosamente sus propios puntajes.
-2. **`onRoundComplete`**: Se dispara al finalizar la ronda. Procesa los `roundScore` de los jugadores, los suma al puntaje de la sala y reinicia las variables temporales para preparar la siguiente ronda.
-3. **`cleanupPunishments`**: Cron Job o TTL trigger que elimina los archivos multimedia (fotos y audios) del bucket de Firebase Storage que tienen más de 24 horas de antigüedad, para ahorrar costos.
+Las reglas en `database.rules.json` exigen que todo cliente esté autenticado (`auth != null`, cubierto de forma transparente por Firebase Anonymous Auth):
 
----
-
-## Reglas de Seguridad (Security Rules)
-
-### Firestore Rules
-- **Lectura**: Solo usuarios autenticados pueden leer `/users` (excepto la colección `/config` y `/leaderboard` que son públicas de lectura).
-- **Escritura**: Un usuario solo puede editar su propio documento en `/users/{uid}`.
-- **Salas**: Solo usuarios autenticados pueden crear salas. Solo el anfitrión (`hostUid`) puede cambiar el estado principal de `/rooms/{roomCode}` a `finished`.
-
-### Realtime Database Rules
-- El acceso está restringido a usuarios autenticados.
-- **Letras**: Cualquier usuario en la sala puede intentar bloquear una letra (transacción), pero si `status` es distinto de `free`, la regla rechaza la escritura.
-- **Estado (State)**: Los cambios de fase y timer solo pueden ser alterados por el `hostUid` o el `activePlayer` (el que está respondiendo en ese momento).
-
-### Storage Rules
-- Solo usuarios autenticados pueden subir archivos a `/punishments/{roomCode}/`.
-- Limitado a un tamaño máximo de subida (ej. 5MB para audio, 10MB para fotos) y estrictamente a los Content-Types de imagen o audio permitidos.
+- **Lectura (`/mate/$roomId`)**: Permitida a participantes autenticados con el código de sala.
+- **`state`**: Solo el anfitrión creador de la sala (`hostUid`) puede escribir el estado global de la partida.
+- **`members/$uid`**: Cada mesa únicamente puede registrar o eliminar su propio nodo `$uid`.
+- **`answer`**: Las mesas autenticadas pueden enviar su selección de respuesta del turno activo y el anfitrión puede limpiarla al iniciar la siguiente ronda.

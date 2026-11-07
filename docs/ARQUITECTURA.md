@@ -1,77 +1,73 @@
-# Arquitectura del Proyecto
+# Arquitectura del Proyecto — MateRueda
 
-Word Wonders Link utiliza una arquitectura **Hybrid Feature-Based** adaptada para Flutter. Esta estructura agrupa el código principalmente por funcionalidad (features) en lugar de por capas técnicas, lo que facilita la escalabilidad, el mantenimiento y la navegación dentro del proyecto a medida que crece.
+**MateRueda** utiliza una arquitectura **Feature-Based (basada en funcionalidades)** en Flutter, adaptada a partir del motor de código abierto *Word Wonders Link* para ofrecer un ambiente multimedia colaborativo dirigido a niños y niñas de **1.° grado de primaria (6 a 7 años)**.
 
-## Estructura de Carpetas
+---
 
-La raíz del código fuente se encuentra en `lib/` y está dividida de la siguiente manera:
+## Estructura de Carpetas (`lib/`)
 
-- **`core/`**: Contiene la configuración global y transversal de la aplicación.
-  - Constantes globales (colores, dimensiones, strings).
-  - Configuración del tema (ThemeData).
-  - Enrutador principal (`app_router.dart` usando `go_router`).
-  - Utilidades genéricas.
-  
-- **`features/`**: El núcleo de la aplicación. Cada carpeta aquí representa un módulo independiente y contiene sus propias capas de datos (`data`), dominio (`domain`) y presentación (`presentation`).
-  - **`auth/`**: Manejo de autenticación con Firebase (Email/Password y Google Sign-In), registro, login y modelo de usuario.
-  - **`home/`**: Pantalla de inicio, menú principal y visualización del leaderboard.
-  - **`room/`**: Lógica para la creación de salas, unión a salas mediante código y sala de espera (lobby).
-  - **`game/`**: Motor del juego en tiempo real. Maneja la sincronización de fases a través de Firebase Realtime Database, turnos, ruleta de letras y envío de respuestas.
-  - **`evaluation/`**: Sistema interactivo donde los jugadores votan y califican las respuestas de los demás.
-  - **`punishment/`**: Gestión de los castigos para el perdedor de la ronda (foto selfie, cantar audios o encontrar un color). Incluye interacciones con cámara y micrófono.
-  - **`results/`**: Pantalla final que muestra la tabla de posiciones de la partida, puntajes finales y sonidos de victoria o derrota.
-  - **`splash/`**: Pantalla de carga inicial que verifica la sesión del usuario y la versión mínima requerida de la app.
+- **`main.dart` y `main_demo.dart`**:
+  - Punto de entrada unificado de la aplicación. Inicializa los servicios de audio y voz, configura el controlador de partida (`LocalGameController`) y registra el enrutador reactivo con `go_router`.
 
-- **`shared/`**: Elementos que se utilizan a través de múltiples features.
-  - Widgets comunes (`AppButton`, `AppBackground`, `AppIcon`, teclados virtuales).
-  - Servicios transversales (`AudioManagerService` para reproducción de efectos y música de fondo).
-  - Modelos de datos genéricos.
+- **`core/`**: Configuración global y transversal:
+  - `constants/`: Colores de identidad visual de MateRueda (`mate_colors.dart`), textos (`app_strings.dart`), rutas y dimensiones responsivas.
+  - `theme/`: Tema visual amigable con tipografía redondeada (`Fredoka` / `Nunito`), alto contraste y botones táctiles amplios (**RNF01**).
+  - `utils/`: Generador de códigos de sala alfanuméricos de 6 caracteres (`room_code_generator.dart`, sin caracteres ambiguos como `0/O` o `1/I`).
 
-- **`settings/`**: Módulo dedicado a las configuraciones locales del usuario (volumen de música y efectos, información de la app).
+- **`features/`**: Módulos principales del dominio educativo:
+  - **`challenge/`**:
+    - `domain/math_challenge.dart`: Modelo inmutable `MathChallenge`, serialización JSON (`toJson` / `fromJson`), niveles configurables (`ChallengeSettings.basico` hasta 10 y `ampliado` hasta 20) y `MathChallengeGenerator` para las **5 categorías matemáticas (OA1–OA5)**.
+    - `presentation/widgets/challenge_illustrations.dart`: Ilustraciones vectoriales con `CustomPainter` para colecciones de conteo (manzanas, estrellas, globos, peces, flores, bloques), figuras geométricas y **objetos cotidianos del hogar** (*reloj de pared*, *ventana*, *pedazo de pizza* y *celular*).
+    - `presentation/screens/math_challenge_screen.dart`: Tarjeta interactiva del reto matemático con lectura en voz alta y botones de respuesta de un solo toque (**RF04**).
+  - **`local_game/`**:
+    - `domain/local_game_controller.dart`: Controlador central (`ChangeNotifier`) que orquesta tanto las partidas en **1 dispositivo** como las partidas sincronizadas en **varios dispositivos**, gestionando turnos por mesa, puntaje de estrellas, retroalimentación y métricas de latencia (**RNF05**).
+    - `presentation/screens/`: Las **8 pantallas** de MateRueda (Splash, Menú con Numi, Crear/Unirse a Sala, Sala de Espera, Ruleta de 5 categorías, Reto Matemático, Retroalimentación positiva y Podio grupal de Resultados).
+    - `presentation/widgets/mate_widgets.dart`: Componentes visuales reutilizables (`MateBackground`, `MateButton`, `MateCard`, `MateOutlinedText`, `TeamAvatar`).
+  - **`online_game/`**:
+    - `data/mate_room_backend.dart`: Interfaz `MateRoomBackend` con dos implementaciones intercambiables:
+      1. `FirebaseMateRoomBackend`: Sincronización en tiempo real sobre Firebase Realtime Database (`mate/{code}`) con autenticación anónima automática.
+      2. `InMemoryMateRoomBackend`: Backend determinista en memoria con `Stream.multi` para pruebas automatizadas sin depender de red externa.
 
-## Patrones de Diseño Utilizados
+- **`shared/`**: Servicios transversales reutilizables:
+  - `data/tts_service.dart`: Singleton `TtsService` sobre `flutter_tts` (`es-MX`, velocidad pausada para 1.° grado y `awaitSpeakCompletion(true)`) que garantiza que las consignas habladas nunca se corten durante transiciones de pantalla (**RNF02**).
+  - `data/audio_manager_service.dart`: Singleton `AudioManagerService` sobre `just_audio` para música de fondo y efectos sonoros con atenuación independiente (`volumeFactor`).
 
-1. **Provider Pattern**: 
-   Se utiliza el paquete `provider` para la gestión de estado de la UI y la Inyección de Dependencias (DI). Cada feature principal tiene su propio Provider (`AuthProvider`, `GameProvider`, `RoomProvider`, etc.) que expone el estado y los métodos a la capa de presentación.
+---
 
-2. **Repository / Service Pattern**:
-   Las operaciones de acceso a datos y comunicación con Firebase están abstraídas en clases de servicio (`FirestoreService`, `RealtimeDbService`, `AuthService`). Los providers no acceden directamente a las APIs de terceros, sino que delegan en estos servicios.
+## Patrones de Diseño Aplicados
 
-3. **Singleton**:
-   Se emplea en servicios específicos que requieren una única instancia global en todo el ciclo de vida de la aplicación. El ejemplo principal es `AudioManagerService`, el cual asegura que la música de fondo no se reinicie o se solape en cambios de ruta.
+1. **ChangeNotifier + AnimatedBuilder / Listenable**:
+   `LocalGameController` centraliza el estado de la sesión y notifica de inmediato tanto a las vistas como al `refreshListenable` de `GoRouter`, redirigiendo automáticamente a todas las pantallas conectadas cuando cambia la fase de la partida.
 
-4. **Observer Pattern (con Firebase Streams)**:
-   Debido a la naturaleza multijugador del juego, se depende fuertemente de flujos reactivos (`Streams`). La base de datos en tiempo real emite eventos (`onValue`) que son escuchados por los providers. Cuando el estado cambia, el provider actualiza sus variables locales y notifica a la UI mediante `notifyListeners()`.
+2. **Strategy / Backend Adapter (`MateRoomBackend`)**:
+   Desacoplar el transporte de red mediante la interfaz `MateRoomBackend` permite que las mismas 8 pantallas operen sin cambios en modo local (offline), en modo Firebase RTDB (aula conectada) y en pruebas automatizadas en memoria.
 
-## Flujo de Datos
+3. **Singleton en Audio y Voz (`TtsService` y `AudioManagerService`)**:
+   Evita instancias duplicadas del motor nativo de síntesis de voz o reproductores de audio al navegar entre la ruleta, el reto y la pantalla de retroalimentación.
 
-El ciclo de vida de la información sigue una dirección reactiva unidireccional generalizada:
+4. **Privacidad desde el Diseño — Cumplimiento RNF03**:
+   Se eliminaron de raíz los módulos heredados de votación competitiva y castigos multimedia (`evaluation/` y `punishment/`), así como cualquier dependencia o permiso de cámara, micrófono o almacenamiento de fotos/audios de personas menores de edad.
+
+---
+
+## Flujo Reactivo en Modo Multidispositivo
 
 ```text
-[UI - Pantalla] 
-       │ (1. Usuario interactúa: toca un botón, ingresa respuesta)
-       ▼
-[Provider - Gestor de Estado] 
-       │ (2. Procesa regla de negocio local)
-       ▼
-[Service - Repositorio] 
-       │ (3. Llama a la API de Firebase)
-       ▼
-[Firebase - RTDB/Firestore] 
-       │ (4. Sincroniza datos con la nube y emite actualización)
-       ▼
-[Service - Listener] 
-       │ (5. Recibe el nuevo estado mediante un Stream)
-       ▼
-[Provider - Actualizador] 
-       │ (6. Actualiza sus variables internas y llama notifyListeners())
-       ▼
-[UI - Pantalla] 
-         (7. Se reconstruye con los datos más recientes)
+[Docente / Mesa toca pantalla]
+              │
+              ▼
+   [LocalGameController]
+              │  publica estado o respuesta con marca de tiempo (sentAt)
+              ▼
+  [FirebaseMateRoomBackend]  ───►  RTDB (/mate/{code})
+                                          │
+              ◄───────────────────────────┘  Stream en tiempo real
+              ▼
+   [LocalGameController]
+    • Calcula latencia de recepción (RNF05 ≤ 3 s)
+    • Actualiza fase, reto y estrellas
+    • Dispara redirección automática en GoRouter
+              │
+              ▼
+     [Pantallas sincronizadas]
 ```
-
-## Decisiones Arquitectónicas
-
-- **Hybrid Feature-Based**: En lugar de separar por `models`, `views`, y `controllers` a nivel raíz, agrupar por features permite que si se necesita modificar o eliminar el módulo de "castigos", todo su código esté aislado en `features/punishment/`.
-- **Firebase Dual (Firestore + RTDB)**: Se eligió *Firestore* para datos persistentes (perfiles, historial, leaderboard) por su capacidad de consultas complejas. Sin embargo, para el motor del juego que requiere milisegundos de latencia y sincronización de presencia, se integró *Realtime Database (RTDB)*.
-- **Provider sobre Bloc/Riverpod**: Al ser un juego muy reactivo basado en Streams de Firebase, `ChangeNotifierProvider` resulta suficientemente potente y con menor boilerplate comparado con Bloc, permitiendo iteraciones ágiles y código legible.
