@@ -64,7 +64,7 @@ El instalador se genera en `build/app/outputs/flutter-apk/app-release.apk`.
 
 ---
 
-## 📚 Documentación Técnica (`/docs`)
+## 📚 Documentación Técnica (`/docs`) y Panel Web
 
 1. [Guía de Instalación, Pruebas y Despliegue](docs/INSTALACION.md)
 2. [Arquitectura del Proyecto](docs/ARQUITECTURA.md)
@@ -72,3 +72,4 @@ El instalador se genera en `build/app/outputs/flutter-apk/app-release.apk`.
 4. [Flujo Pedagógico y Lógico del Juego](docs/FLUJO_DE_JUEGO.md)
 5. [Mapa de Pantallas y Navegación](docs/PANTALLAS.md)
 6. [Paquetes y Dependencias (y cumplimiento RNF03)](docs/PAQUETES.md)
+7. [Panel Web de Monitoreo y Cierre de Salas/Mesas](docs/panel/index.html)

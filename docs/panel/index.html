@@ -1,0 +1,1088 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>MateRueda — Panel Web de Salas y Mesas</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --morado-oscuro: #3D2366;
+      --morado-vivo: #6A4C93;
+      --morado-claro: #EFE9FA;
+      --turquesa: #1DB5A6;
+      --turquesa-oscuro: #138478;
+      --coral: #FF595E;
+      --coral-oscuro: #D63C41;
+      --amarillo: #FFCA3A;
+      --cielo: #4CC9F0;
+      --verde: #57CC99;
+      --fondo: #F6F3FC;
+      --blanco: #FFFFFF;
+      --gris-texto: #66597E;
+      --borde: #E2D9F3;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Fredoka', system-ui, -apple-system, sans-serif;
+      background: radial-gradient(circle at top right, #EAE0FF 0%, var(--fondo) 55%);
+      color: var(--morado-oscuro);
+      min-height: 100vh;
+    }
+
+    /* ── Header ── */
+    header {
+      background: linear-gradient(135deg, var(--morado-oscuro), var(--morado-vivo));
+      color: var(--blanco);
+      padding: 18px 28px;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+      box-shadow: 0 6px 20px rgba(61, 35, 102, 0.18);
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .brand-badge {
+      width: 48px;
+      height: 48px;
+      border-radius: 16px;
+      background: var(--amarillo);
+      color: var(--morado-oscuro);
+      font-size: 26px;
+      font-weight: 700;
+      display: grid;
+      place-items: center;
+      box-shadow: 0 4px 0 rgba(0, 0, 0, 0.18);
+    }
+
+    .brand h1 {
+      font-size: 24px;
+      font-weight: 700;
+      letter-spacing: 0.3px;
+    }
+
+    .brand p {
+      font-size: 14px;
+      opacity: 0.88;
+      font-weight: 400;
+    }
+
+    .header-right {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .live-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 7px 14px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.16);
+      font-size: 14px;
+      font-weight: 500;
+    }
+
+    .live-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: #4ADE80;
+      box-shadow: 0 0 0 4px rgba(74, 222, 128, 0.25);
+      animation: pulse 1.8s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { transform: scale(1); opacity: 1; }
+      50% { transform: scale(1.2); opacity: 0.7; }
+    }
+
+    /* ── Container ── */
+    main {
+      max-width: 1180px;
+      margin: 28px auto;
+      padding: 0 20px 48px;
+    }
+
+    /* ── Buttons ── */
+    .btn {
+      font-family: inherit;
+      font-weight: 600;
+      font-size: 15px;
+      border: none;
+      border-radius: 14px;
+      padding: 10px 18px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      transition: transform 0.12s ease, opacity 0.15s ease, box-shadow 0.15s ease;
+    }
+
+    .btn:active {
+      transform: translateY(2px);
+    }
+
+    .btn:disabled {
+      opacity: 0.55;
+      cursor: not-allowed;
+    }
+
+    .btn-turquesa {
+      background: var(--turquesa);
+      color: var(--blanco);
+      box-shadow: 0 4px 0 var(--turquesa-oscuro);
+    }
+
+    .btn-coral {
+      background: var(--coral);
+      color: var(--blanco);
+      box-shadow: 0 4px 0 var(--coral-oscuro);
+    }
+
+    .btn-amarillo {
+      background: var(--amarillo);
+      color: var(--morado-oscuro);
+      box-shadow: 0 4px 0 #D4A115;
+    }
+
+    .btn-outline {
+      background: rgba(255, 255, 255, 0.18);
+      color: var(--blanco);
+      border: 2px solid rgba(255, 255, 255, 0.45);
+    }
+
+    .btn-ghost-danger {
+      background: #FFF1F2;
+      color: var(--coral-oscuro);
+      border: 2px solid #FECDD3;
+      padding: 6px 12px;
+      font-size: 13px;
+      border-radius: 10px;
+    }
+
+    .btn-ghost-danger:hover {
+      background: var(--coral);
+      color: var(--blanco);
+      border-color: var(--coral);
+    }
+
+    /* ── Login Card ── */
+    .login-wrap {
+      max-width: 440px;
+      margin: 48px auto;
+      background: var(--blanco);
+      border-radius: 28px;
+      padding: 32px;
+      border: 3px solid var(--borde);
+      box-shadow: 0 14px 36px rgba(61, 35, 102, 0.1);
+    }
+
+    .login-wrap h2 {
+      font-size: 26px;
+      margin-bottom: 6px;
+      text-align: center;
+    }
+
+    .login-wrap .sub {
+      text-align: center;
+      color: var(--gris-texto);
+      font-size: 15px;
+      margin-bottom: 22px;
+    }
+
+    .tabs {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      background: var(--morado-claro);
+      padding: 5px;
+      border-radius: 16px;
+      margin-bottom: 20px;
+    }
+
+    .tab-btn {
+      font-family: inherit;
+      font-size: 15px;
+      font-weight: 600;
+      padding: 9px;
+      border: none;
+      border-radius: 12px;
+      background: transparent;
+      color: var(--gris-texto);
+      cursor: pointer;
+    }
+
+    .tab-btn.active {
+      background: var(--blanco);
+      color: var(--morado-oscuro);
+      box-shadow: 0 2px 8px rgba(61, 35, 102, 0.1);
+    }
+
+    .field {
+      margin-bottom: 14px;
+    }
+
+    .field label {
+      display: block;
+      font-size: 14px;
+      font-weight: 600;
+      margin-bottom: 6px;
+    }
+
+    .field input {
+      width: 100%;
+      font-family: inherit;
+      font-size: 16px;
+      padding: 12px 14px;
+      border-radius: 14px;
+      border: 2.5px solid var(--borde);
+      outline: none;
+      color: var(--morado-oscuro);
+    }
+
+    .field input:focus {
+      border-color: var(--morado-vivo);
+    }
+
+    .error-msg {
+      background: #FFF1F2;
+      color: var(--coral-oscuro);
+      border: 2px solid #FECDD3;
+      border-radius: 12px;
+      padding: 10px 14px;
+      font-size: 14px;
+      margin-bottom: 14px;
+      display: none;
+    }
+
+    /* ── Stats Grid ── */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+
+    .stat-card {
+      background: var(--blanco);
+      border-radius: 22px;
+      padding: 20px 22px;
+      border: 3px solid var(--borde);
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      box-shadow: 0 8px 20px rgba(61, 35, 102, 0.05);
+    }
+
+    .stat-icon {
+      width: 54px;
+      height: 54px;
+      border-radius: 18px;
+      display: grid;
+      place-items: center;
+      font-size: 26px;
+      flex-shrink: 0;
+    }
+
+    .stat-val {
+      font-size: 32px;
+      font-weight: 700;
+      line-height: 1.05;
+    }
+
+    .stat-lbl {
+      font-size: 14px;
+      color: var(--gris-texto);
+      font-weight: 500;
+    }
+
+    /* ── Toolbar ── */
+    .toolbar {
+      background: var(--blanco);
+      border-radius: 22px;
+      padding: 16px 20px;
+      border: 3px solid var(--borde);
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+      margin-bottom: 24px;
+    }
+
+    .toolbar-left {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .search-input {
+      font-family: inherit;
+      font-size: 15px;
+      padding: 9px 14px;
+      border-radius: 12px;
+      border: 2px solid var(--borde);
+      color: var(--morado-oscuro);
+      width: 210px;
+    }
+
+    .filter-chip {
+      font-family: inherit;
+      font-size: 14px;
+      font-weight: 600;
+      padding: 8px 14px;
+      border-radius: 999px;
+      border: 2px solid var(--borde);
+      background: var(--blanco);
+      color: var(--gris-texto);
+      cursor: pointer;
+    }
+
+    .filter-chip.active {
+      background: var(--morado-vivo);
+      border-color: var(--morado-vivo);
+      color: var(--blanco);
+    }
+
+    .toolbar-actions {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    /* ── Rooms Grid ── */
+    .rooms-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+      gap: 20px;
+    }
+
+    .room-card {
+      background: var(--blanco);
+      border-radius: 24px;
+      border: 3px solid var(--borde);
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      box-shadow: 0 10px 24px rgba(61, 35, 102, 0.06);
+      transition: border-color 0.2s ease;
+    }
+
+    .room-card.stale {
+      border-color: var(--amarillo);
+      background: linear-gradient(to bottom, #FFFDF4, var(--blanco) 80px);
+    }
+
+    .room-top {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 10px;
+    }
+
+    .room-code-box {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .room-code-lbl {
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      color: var(--gris-texto);
+      font-weight: 600;
+    }
+
+    .room-code {
+      font-size: 32px;
+      font-weight: 700;
+      color: var(--morado-vivo);
+      letter-spacing: 2px;
+      line-height: 1;
+    }
+
+    .badges {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 6px;
+    }
+
+    .phase-badge {
+      padding: 5px 12px;
+      border-radius: 999px;
+      font-size: 13px;
+      font-weight: 600;
+    }
+
+    .phase-lobby { background: #E0F2FE; color: #0369A1; }
+    .phase-spinning { background: #F3E8FF; color: #6B21A8; }
+    .phase-challenge { background: #DCFCE7; color: #15803D; }
+    .phase-feedback { background: #FEF9C3; color: #A16207; }
+    .phase-results { background: #FFE4E6; color: #BE123C; }
+
+    .stale-badge {
+      background: #FEF3C7;
+      color: #B45309;
+      border: 1.5px solid #FCD34D;
+      padding: 3px 10px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 600;
+    }
+
+    .room-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px 16px;
+      font-size: 14px;
+      color: var(--gris-texto);
+      background: var(--fondo);
+      padding: 10px 14px;
+      border-radius: 14px;
+    }
+
+    .mesas-title {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--gris-texto);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .mesas-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .mesa-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      padding: 9px 12px;
+      border-radius: 14px;
+      border: 2px solid var(--borde);
+      background: #FCFAFF;
+    }
+
+    .mesa-info {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      min-width: 0;
+    }
+
+    .mesa-dot {
+      width: 30px;
+      height: 30px;
+      border-radius: 50%;
+      color: var(--blanco);
+      font-weight: 700;
+      font-size: 15px;
+      display: grid;
+      place-items: center;
+      flex-shrink: 0;
+    }
+
+    .mesa-name {
+      font-weight: 600;
+      font-size: 15px;
+    }
+
+    .mesa-sub {
+      font-size: 12px;
+      color: var(--gris-texto);
+    }
+
+    .empty-state {
+      background: var(--blanco);
+      border: 3px dashed var(--borde);
+      border-radius: 28px;
+      padding: 56px 24px;
+      text-align: center;
+    }
+
+    .empty-state h3 {
+      font-size: 24px;
+      margin: 12px 0 6px;
+    }
+
+    .empty-state p {
+      color: var(--gris-texto);
+      font-size: 16px;
+    }
+
+    .toast {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      background: var(--morado-oscuro);
+      color: var(--blanco);
+      padding: 12px 20px;
+      border-radius: 16px;
+      font-weight: 600;
+      box-shadow: 0 10px 24px rgba(0, 0, 0, 0.22);
+      transform: translateY(120%);
+      opacity: 0;
+      transition: all 0.25s ease;
+      z-index: 100;
+    }
+
+    .toast.show {
+      transform: translateY(0);
+      opacity: 1;
+    }
+
+    .hidden {
+      display: none !important;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="brand">
+      <div class="brand-badge">🎡</div>
+      <div>
+        <h1>MateRueda · Panel de Salas</h1>
+        <p>Monitoreo en vivo y cierre de salas o mesas abiertas</p>
+      </div>
+    </div>
+
+    <div class="header-right hidden" id="headerSession">
+      <div class="live-pill">
+        <span class="live-dot"></span>
+        <span id="userEmailLabel">Conectado</span>
+      </div>
+      <button class="btn btn-outline" id="logoutBtn">Cerrar sesión</button>
+    </div>
+  </header>
+
+  <main>
+    <!-- ── Vista de Acceso Docente / Admin ── -->
+    <section class="login-wrap" id="authSection">
+      <h2>Acceso Docente</h2>
+      <p class="sub">Inicia sesión con correo para ver todas las salas activas y cerrar las que queden sin uso.</p>
+
+      <div class="tabs">
+        <button class="tab-btn active" id="tabLogin" type="button">Iniciar sesión</button>
+        <button class="tab-btn" id="tabRegister" type="button">Crear cuenta</button>
+      </div>
+
+      <div class="error-msg" id="authError"></div>
+
+      <form id="authForm">
+        <div class="field">
+          <label for="emailInput">Correo electrónico</label>
+          <input id="emailInput" type="email" required placeholder="profe@escuela.cr" autocomplete="email" />
+        </div>
+        <div class="field">
+          <label for="passInput">Contraseña</label>
+          <input id="passInput" type="password" required minlength="6" placeholder="••••••••" autocomplete="current-password" />
+        </div>
+        <button class="btn btn-turquesa" id="authSubmitBtn" style="width: 100%; margin-top: 8px;" type="submit">
+          Entrar al panel
+        </button>
+      </form>
+    </section>
+
+    <!-- ── Vista Principal del Panel ── -->
+    <section class="hidden" id="dashboardSection">
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-icon" style="background:#EFE9FA; color:#6A4C93;">🏫</div>
+          <div>
+            <div class="stat-val" id="statRooms">0</div>
+            <div class="stat-lbl">Salas abiertas</div>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon" style="background:#E0FAF7; color:#138478;">👧👦</div>
+          <div>
+            <div class="stat-val" id="statMesas">0</div>
+            <div class="stat-lbl">Mesas conectadas</div>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon" style="background:#FEF3C7; color:#B45309;">⏳</div>
+          <div>
+            <div class="stat-val" id="statStale">0</div>
+            <div class="stat-lbl">Sin uso (&gt; 10 min)</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="toolbar">
+        <div class="toolbar-left">
+          <input class="search-input" id="searchInput" type="text" placeholder="🔎 Buscar código (ej. AB3K9)" />
+          <button class="filter-chip active" id="filterAll" type="button">Todas</button>
+          <button class="filter-chip" id="filterStale" type="button">Solo inactivas (&gt; 10 min)</button>
+        </div>
+        <div class="toolbar-actions">
+          <button class="btn btn-amarillo" id="cleanStaleBtn" type="button">
+            🧹 Cerrar inactivas (&gt; 10 min)
+          </button>
+          <button class="btn btn-coral" id="closeAllBtn" type="button">
+            🗑️ Cerrar todas las salas
+          </button>
+        </div>
+      </div>
+
+      <div id="roomsContainer"></div>
+    </section>
+  </main>
+
+  <div class="toast" id="toast"></div>
+
+  <script type="module">
+    import { initializeApp } from 'https://www.gstatic.com/firebasejs/11.4.0/firebase-app.js';
+    import {
+      getAuth,
+      onAuthStateChanged,
+      signInWithEmailAndPassword,
+      createUserWithEmailAndPassword,
+      signOut
+    } from 'https://www.gstatic.com/firebasejs/11.4.0/firebase-auth.js';
+    import {
+      getDatabase,
+      ref,
+      onValue,
+      remove,
+      update
+    } from 'https://www.gstatic.com/firebasejs/11.4.0/firebase-database.js';
+
+    // Configuración oficial del proyecto Firebase de MateRueda
+    const firebaseConfig = {
+      apiKey: 'AIzaSyC9kIWRzAdKws_iGFMfcngk7byyFv3AJy8',
+      authDomain: 'wordwonderslink.firebaseapp.com',
+      databaseURL: 'https://wordwonderslink-default-rtdb.firebaseio.com',
+      projectId: 'wordwonderslink',
+      messagingSenderId: '1012790476779'
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getDatabase(app);
+
+    const STALE_MINUTES = 10;
+    const TEAM_COLORS = ['#FF595E', '#1DB5A6', '#FFCA3A', '#6A4C93', '#4CC9F0', '#7BC96F'];
+
+    const PHASE_LABELS = {
+      lobby: { text: 'Sala de espera', cls: 'phase-lobby' },
+      spinning: { text: 'Girando ruleta', cls: 'phase-spinning' },
+      challenge: { text: 'Resolviendo reto', cls: 'phase-challenge' },
+      feedback: { text: 'Retroalimentación', cls: 'phase-feedback' },
+      results: { text: 'Resultados finales', cls: 'phase-results' }
+    };
+
+    let isRegisterMode = false;
+    let onlyStaleFilter = false;
+    let searchQuery = '';
+    let roomsSnapshot = {};
+    let unsubscribeRooms = null;
+
+    // ── Referencias DOM ──
+    const authSection = document.getElementById('authSection');
+    const dashboardSection = document.getElementById('dashboardSection');
+    const headerSession = document.getElementById('headerSession');
+    const userEmailLabel = document.getElementById('userEmailLabel');
+    const tabLogin = document.getElementById('tabLogin');
+    const tabRegister = document.getElementById('tabRegister');
+    const authForm = document.getElementById('authForm');
+    const authSubmitBtn = document.getElementById('authSubmitBtn');
+    const authError = document.getElementById('authError');
+    const emailInput = document.getElementById('emailInput');
+    const passInput = document.getElementById('passInput');
+    const logoutBtn = document.getElementById('logoutBtn');
+
+    const statRooms = document.getElementById('statRooms');
+    const statMesas = document.getElementById('statMesas');
+    const statStale = document.getElementById('statStale');
+    const searchInput = document.getElementById('searchInput');
+    const filterAll = document.getElementById('filterAll');
+    const filterStale = document.getElementById('filterStale');
+    const cleanStaleBtn = document.getElementById('cleanStaleBtn');
+    const closeAllBtn = document.getElementById('closeAllBtn');
+    const roomsContainer = document.getElementById('roomsContainer');
+    const toastEl = document.getElementById('toast');
+
+    function showToast(msg) {
+      toastEl.textContent = msg;
+      toastEl.classList.add('show');
+      clearTimeout(showToast._t);
+      showToast._t = setTimeout(() => toastEl.classList.remove('show'), 2800);
+    }
+
+    function setAuthMode(register) {
+      isRegisterMode = register;
+      tabLogin.classList.toggle('active', !register);
+      tabRegister.classList.toggle('active', register);
+      authSubmitBtn.textContent = register ? 'Crear cuenta y entrar' : 'Entrar al panel';
+      authError.style.display = 'none';
+    }
+
+    tabLogin.addEventListener('click', () => setAuthMode(false));
+    tabRegister.addEventListener('click', () => setAuthMode(true));
+
+    authForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      authError.style.display = 'none';
+      authSubmitBtn.disabled = true;
+      const email = emailInput.value.trim();
+      const pass = passInput.value;
+
+      try {
+        if (isRegisterMode) {
+          await createUserWithEmailAndPassword(auth, email, pass);
+        } else {
+          await signInWithEmailAndPassword(auth, email, pass);
+        }
+      } catch (err) {
+        authError.textContent = translateAuthError(err.code || err.message);
+        authError.style.display = 'block';
+      } finally {
+        authSubmitBtn.disabled = false;
+      }
+    });
+
+    function translateAuthError(code) {
+      if (code.includes('invalid-credential') || code.includes('wrong-password') || code.includes('user-not-found')) {
+        return 'Correo o contraseña incorrectos (si no tienes cuenta aún, usa la pestaña "Crear cuenta").';
+      }
+      if (code.includes('email-already-in-use')) {
+        return 'Ese correo ya está registrado. Cambia a la pestaña "Iniciar sesión".';
+      }
+      if (code.includes('weak-password')) {
+        return 'La contraseña debe tener al menos 6 caracteres.';
+      }
+      return 'Error de autenticación: ' + code;
+    }
+
+    logoutBtn.addEventListener('click', () => signOut(auth));
+
+    onAuthStateChanged(auth, (user) => {
+      if (unsubscribeRooms) {
+        unsubscribeRooms();
+        unsubscribeRooms = null;
+      }
+
+      if (!user || user.isAnonymous) {
+        authSection.classList.remove('hidden');
+        dashboardSection.classList.add('hidden');
+        headerSession.classList.add('hidden');
+        return;
+      }
+
+      authSection.classList.add('hidden');
+      dashboardSection.classList.remove('hidden');
+      headerSession.classList.remove('hidden');
+      userEmailLabel.textContent = user.email || 'Administrador';
+
+      // Escuchar todas las salas bajo /mate en tiempo real
+      const mateRef = ref(db, 'mate');
+      unsubscribeRooms = onValue(
+        mateRef,
+        (snap) => {
+          roomsSnapshot = snap.val() || {};
+          renderDashboard();
+        },
+        (err) => {
+          roomsContainer.innerHTML = `
+            <div class="empty-state">
+              <div style="font-size:42px;">🔒</div>
+              <h3>Falta actualizar las reglas en Firebase</h3>
+              <p>Copia el archivo <b>database.rules.json</b> actualizado en Realtime Database → Reglas para permitir lectura desde el panel web (${err.message}).</p>
+            </div>`;
+        }
+      );
+    });
+
+    // ── Utilidades de tiempo y formato ──
+    function lastActivityMs(room) {
+      const stateSent = room?.state?.sentAt || 0;
+      const created = room?.createdAt || 0;
+      let latestMember = 0;
+      if (room?.members && typeof room.members === 'object') {
+        for (const m of Object.values(room.members)) {
+          if (m?.joinedAt && m.joinedAt > latestMember) latestMember = m.joinedAt;
+        }
+      }
+      return Math.max(stateSent, created, latestMember);
+    }
+
+    function minutesSince(ts) {
+      if (!ts) return 999;
+      return Math.max(0, Math.floor((Date.now() - ts) / 60000));
+    }
+
+    function formatAgo(ts) {
+      if (!ts) return 'sin registro';
+      const sec = Math.max(0, Math.floor((Date.now() - ts) / 1000));
+      if (sec < 60) return `hace ${sec} s`;
+      const min = Math.floor(sec / 60);
+      if (min < 60) return `hace ${min} min`;
+      const hrs = Math.floor(min / 60);
+      const rem = min % 60;
+      return `hace ${hrs} h ${rem} min`;
+    }
+
+    function extractTeams(room) {
+      const hostUid = room?.host || null;
+      const stateTeams = Array.isArray(room?.state?.teams) ? room.state.teams : [];
+      if (stateTeams.length > 0) {
+        return stateTeams.map((t, idx) => ({
+          index: idx,
+          name: t?.name || `Mesa ${idx + 1}`,
+          uid: t?.uid || null,
+          stars: t?.stars ?? 0,
+          answered: t?.answered ?? 0,
+          isHost: Boolean(t?.uid && t.uid === hostUid),
+          color: TEAM_COLORS[idx % TEAM_COLORS.length]
+        }));
+      }
+      // Respaldo si state.teams está vacío pero hay members conectados
+      const members = room?.members && typeof room.members === 'object'
+        ? Object.keys(room.members)
+        : [];
+      return members.map((uid, idx) => ({
+        index: idx,
+        name: `Mesa ${idx + 1}`,
+        uid,
+        stars: 0,
+        answered: 0,
+        isHost: uid === hostUid,
+        color: TEAM_COLORS[idx % TEAM_COLORS.length]
+      }));
+    }
+
+    // ── Acciones de Cierre ──
+    async function closeRoom(code) {
+      await remove(ref(db, `mate/${code}`));
+      showToast(`Sala ${code} cerrada correctamente`);
+    }
+
+    async function closeMesa(code, room, team) {
+      const updates = {};
+      if (team.uid) {
+        updates[`mate/${code}/members/${team.uid}`] = null;
+        updates[`mate/${code}/answers/${team.uid}`] = null;
+      }
+      const currentTeams = Array.isArray(room?.state?.teams) ? room.state.teams : [];
+      if (currentTeams.length > 0) {
+        const remaining = currentTeams
+          .filter((_, idx) => idx !== team.index)
+          .map((t, newIdx) => ({
+            ...t,
+            name: `Mesa ${newIdx + 1}`
+          }));
+        updates[`mate/${code}/state/teams`] = remaining;
+        updates[`mate/${code}/state/currentTeamIndex`] = 0;
+        updates[`mate/${code}/state/sentAt`] = Date.now();
+      }
+      await update(ref(db), updates);
+      showToast(`${team.name} retirada de la sala ${code}`);
+    }
+
+    cleanStaleBtn.addEventListener('click', async () => {
+      const staleCodes = Object.entries(roomsSnapshot)
+        .filter(([, r]) => minutesSince(lastActivityMs(r)) >= STALE_MINUTES)
+        .map(([code]) => code);
+
+      if (staleCodes.length === 0) {
+        showToast('No hay salas inactivas mayores a 10 minutos.');
+        return;
+      }
+      if (!confirm(`¿Cerrar las ${staleCodes.length} salas sin uso hace más de ${STALE_MINUTES} minutos?`)) {
+        return;
+      }
+      const updates = {};
+      for (const c of staleCodes) updates[`mate/${c}`] = null;
+      await update(ref(db), updates);
+      showToast(`Se cerraron ${staleCodes.length} salas inactivas.`);
+    });
+
+    closeAllBtn.addEventListener('click', async () => {
+      const codes = Object.keys(roomsSnapshot);
+      if (codes.length === 0) {
+        showToast('No hay ninguna sala abierta en este momento.');
+        return;
+      }
+      if (!confirm(`¿Seguro que deseas cerrar TODAS las salas activas (${codes.length})?`)) {
+        return;
+      }
+      await remove(ref(db, 'mate'));
+      showToast('Todas las salas fueron cerradas.');
+    });
+
+    searchInput.addEventListener('input', () => {
+      searchQuery = searchInput.value.trim().toUpperCase();
+      renderDashboard();
+    });
+
+    filterAll.addEventListener('click', () => {
+      onlyStaleFilter = false;
+      filterAll.classList.add('active');
+      filterStale.classList.remove('active');
+      renderDashboard();
+    });
+
+    filterStale.addEventListener('click', () => {
+      onlyStaleFilter = true;
+      filterStale.classList.add('active');
+      filterAll.classList.remove('active');
+      renderDashboard();
+    });
+
+    // ── Renderizado ──
+    function renderDashboard() {
+      const entries = Object.entries(roomsSnapshot).map(([code, room]) => {
+        const lastTs = lastActivityMs(room);
+        const idleMin = minutesSince(lastTs);
+        const teams = extractTeams(room);
+        return {
+          code,
+          room,
+          teams,
+          lastTs,
+          idleMin,
+          isStale: idleMin >= STALE_MINUTES
+        };
+      });
+
+      // Ordenar: primero las más recientes
+      entries.sort((a, b) => b.lastTs - a.lastTs);
+
+      const totalMesas = entries.reduce((acc, e) => acc + e.teams.length, 0);
+      const totalStale = entries.filter((e) => e.isStale).length;
+
+      statRooms.textContent = String(entries.length);
+      statMesas.textContent = String(totalMesas);
+      statStale.textContent = String(totalStale);
+
+      const visible = entries.filter((e) => {
+        if (onlyStaleFilter && !e.isStale) return false;
+        if (searchQuery && !e.code.includes(searchQuery)) return false;
+        return true;
+      });
+
+      if (visible.length === 0) {
+        roomsContainer.innerHTML = `
+          <div class="empty-state">
+            <div style="font-size:48px;">✨</div>
+            <h3>${entries.length === 0 ? 'No hay salas abiertas en este momento' : 'Ninguna sala coincide con el filtro'}</h3>
+            <p>${entries.length === 0 ? 'Cuando un dispositivo cree una sala en modo "Varios", aparecerá aquí al instante.' : 'Prueba mostrando todas las salas o limpiando el buscador.'}</p>
+          </div>`;
+        return;
+      }
+
+      roomsContainer.innerHTML = '<div class="rooms-grid" id="roomsGrid"></div>';
+      const grid = document.getElementById('roomsGrid');
+
+      for (const item of visible) {
+        const { code, room, teams, lastTs, idleMin, isStale } = item;
+        const phaseKey = room?.state?.phase || 'lobby';
+        const phaseInfo = PHASE_LABELS[phaseKey] || PHASE_LABELS.lobby;
+        const round = room?.state?.round ?? 0;
+        const totalRounds = room?.state?.totalRounds ?? 5;
+        const category = room?.state?.category ? ` · Categoría: ${room.state.category}` : '';
+
+        const card = document.createElement('div');
+        card.className = `room-card ${isStale ? 'stale' : ''}`;
+
+        card.innerHTML = `
+          <div class="room-top">
+            <div class="room-code-box">
+              <span class="room-code-lbl">Código de sala</span>
+              <span class="room-code">${code}</span>
+            </div>
+            <div class="badges">
+              <span class="phase-badge ${phaseInfo.cls}">${phaseInfo.text}</span>
+              ${isStale ? `<span class="stale-badge">⚠️ Sin uso (${idleMin} min)</span>` : ''}
+            </div>
+          </div>
+
+          <div class="room-meta">
+            <span>🎯 Ronda: <b>${round} / ${totalRounds}</b>${category}</span>
+            <span>🕒 Última actividad: <b>${formatAgo(lastTs)}</b></span>
+          </div>
+
+          <div class="mesas-title">
+            <span>Mesas en esta sala (${teams.length})</span>
+          </div>
+
+          <div class="mesas-list"></div>
+
+          <button class="btn btn-coral close-room-btn" style="width:100%; margin-top:auto;" type="button">
+            🗑️ Cerrar sala ${code}
+          </button>
+        `;
+
+        const listEl = card.querySelector('.mesas-list');
+        if (teams.length === 0) {
+          listEl.innerHTML = `<div style="font-size:14px; color:var(--gris-texto); padding:6px 2px;">Sin mesas activas (solo anfitrión esperando).</div>`;
+        } else {
+          teams.forEach((team) => {
+            const row = document.createElement('div');
+            row.className = 'mesa-row';
+            row.innerHTML = `
+              <div class="mesa-info">
+                <div class="mesa-dot" style="background:${team.color};">${team.index + 1}</div>
+                <div>
+                  <div class="mesa-name">${team.name} ${team.isHost ? '👑' : ''}</div>
+                  <div class="mesa-sub">⭐ ${team.stars} estrellas · ${team.answered} resp.${team.isHost ? ' · Anfitrión' : ''}</div>
+                </div>
+              </div>
+              <button class="btn btn-ghost-danger" type="button" title="Quitar esta mesa">✕ Cerrar mesa</button>
+            `;
+            row.querySelector('button').addEventListener('click', () => {
+              if (confirm(`¿Quitar a ${team.name} de la sala ${code}?`)) {
+                closeMesa(code, room, team);
+              }
+            });
+            listEl.appendChild(row);
+          });
+        }
+
+        card.querySelector('.close-room-btn').addEventListener('click', () => {
+          if (confirm(`¿Cerrar por completo la sala ${code}?`)) {
+            closeRoom(code);
+          }
+        });
+
+        grid.appendChild(card);
+      }
+    }
+
+    // Refrescar etiquetas de "hace X min" cada 15 segundos
+    setInterval(() => {
+      if (!dashboardSection.classList.contains('hidden')) {
+        renderDashboard();
+      }
+    }, 15000);
+  </script>
+</body>
+</html>

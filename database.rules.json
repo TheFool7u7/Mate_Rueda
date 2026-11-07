@@ -1,17 +1,19 @@
 {
   "rules": {
     "mate": {
+      ".read": "auth != null && auth.token.firebase.sign_in_provider != 'anonymous'",
+      ".write": "auth != null && auth.token.firebase.sign_in_provider != 'anonymous'",
       "$roomId": {
         ".read": "auth != null",
-        ".write": "auth != null && (!data.exists() || data.child('host').val() == auth.uid)",
+        ".write": "auth != null && (!data.exists() || data.child('host').val() == auth.uid || auth.token.firebase.sign_in_provider != 'anonymous')",
         "members": {
           "$uid": {
-            ".write": "auth != null && auth.uid == $uid"
+            ".write": "auth != null && (auth.uid == $uid || auth.token.firebase.sign_in_provider != 'anonymous')"
           }
         },
         "answers": {
           "$uid": {
-            ".write": "auth != null && auth.uid == $uid"
+            ".write": "auth != null && (auth.uid == $uid || auth.token.firebase.sign_in_provider != 'anonymous')"
           }
         }
       }
