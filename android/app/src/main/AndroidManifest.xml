@@ -1,13 +1,10 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
-    <!-- Permisos requeridos para Word Wonders Link -->
+    <!-- Permisos de MateRueda (cumple RNF03: sin cámara ni micrófono) -->
     <uses-permission android:name="android.permission.INTERNET" />
-    <uses-permission android:name="android.permission.CAMERA" />
-    <uses-permission android:name="android.permission.RECORD_AUDIO" />
-    <uses-permission android:name="android.permission.FLASHLIGHT" />
 
     <application
-        android:label="Word Wonders Link"
+        android:label="MateRueda"
         android:name="${applicationName}"
         android:icon="@mipmap/launcher_icon">
         <activity

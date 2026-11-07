@@ -54,11 +54,13 @@ class _LocalSpinScreenState extends State<LocalSpinScreen>
   double _to = 0;
   bool _spinning = false;
   MathCategory? _landed;
+  int _lastSeenTrigger = 0;
 
   @override
   void initState() {
     super.initState();
     AudioManagerService().playTrack('juego.mp3');
+    _lastSeenTrigger = context.read<LocalGameController>().spinTrigger;
   }
 
   @override
@@ -74,9 +76,17 @@ class _LocalSpinScreenState extends State<LocalSpinScreen>
   }
 
   Future<void> _start() async {
-    if (_spinning || _landed != null) return;
     final game = context.read<LocalGameController>();
+    if (!game.isHost || _spinning || _landed != null) return;
     final idx = game.drawCategoryIndex();
+    _lastSeenTrigger = game.spinTrigger;
+    await _animateToCategory(idx, finishAsHost: true);
+  }
+
+  Future<void> _animateToCategory(
+    int idx, {
+    required bool finishAsHost,
+  }) async {
     const sector = 2 * math.pi / _sectors;
     // El centro del sector debe quedar bajo la flecha (arriba).
     final target = -(idx + 0.5) * sector;
@@ -103,10 +113,12 @@ class _LocalSpinScreenState extends State<LocalSpinScreen>
       _landed = MathCategory.values[idx];
     });
 
+    if (!finishAsHost) return;
     await Future.delayed(const Duration(milliseconds: 1600));
     if (!mounted) return;
+    final game = context.read<LocalGameController>();
     game.onSpinFinished();
-    context.go(LocalRoutes.challenge);
+    if (!game.isOnline) context.go(LocalRoutes.challenge);
   }
 
   @override
@@ -119,6 +131,20 @@ class _LocalSpinScreenState extends State<LocalSpinScreen>
       });
       return const SizedBox.shrink();
     }
+
+    // En dispositivos cliente, cuando la docente gira la ruleta se dispara
+    // la animación local hacia la misma categoría.
+    if (!game.isHost &&
+        game.spinTrigger != _lastSeenTrigger &&
+        game.category != null &&
+        !_spinning) {
+      _lastSeenTrigger = game.spinTrigger;
+      final idx = game.category!.index;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _animateToCategory(idx, finishAsHost: false);
+      });
+    }
+
     final team = game.currentTeam;
 
     return MateBackground(
@@ -150,7 +176,7 @@ class _LocalSpinScreenState extends State<LocalSpinScreen>
                 builder: (context, box) {
                   final size = math.min(box.maxWidth, box.maxHeight) * 0.92;
                   return GestureDetector(
-                    onTap: _start,
+                    onTap: game.isHost ? _start : null,
                     child: Semantics(
                       button: true,
                       label: 'Girar la ruleta',
@@ -175,10 +201,16 @@ class _LocalSpinScreenState extends State<LocalSpinScreen>
             child: Center(
               child: _landed != null
                   ? MateOutlinedText(_landed!.label, size: 40)
-                  : MateButton(
+                  : game.isHost
+                  ? MateButton(
                       label: _spinning ? 'Girando...' : '¡Girar!',
                       icon: Icons.refresh_rounded,
                       onTap: _spinning ? null : _start,
+                    )
+                  : MateOutlinedText(
+                      _spinning ? 'Girando...' : 'La profe gira la ruleta',
+                      size: 30,
+                      color: MateColors.moradoOscuro,
                     ),
             ),
           ),
@@ -215,7 +247,13 @@ class _WheelPainter extends CustomPainter {
     final rect = Rect.fromCircle(center: Offset.zero, radius: radius);
     for (var i = 0; i < n; i++) {
       final start = -math.pi / 2 + i * sector;
-      canvas.drawArc(rect, start, sector, true, Paint()..color = _sectorColors[i]);
+      canvas.drawArc(
+        rect,
+        start,
+        sector,
+        true,
+        Paint()..color = _sectorColors[i],
+      );
       canvas.drawArc(
         rect,
         start,
@@ -232,14 +270,16 @@ class _WheelPainter extends CustomPainter {
       final tp = TextPainter(
         text: TextSpan(
           text: _shortNames[MathCategory.values[i]],
-          style: mateFredoka(radius * 0.15, color: i == 2 ? MateColors.moradoOscuro : Colors.white),
+          style: mateFredoka(
+            radius * 0.15,
+            color: i == 2 ? MateColors.moradoOscuro : Colors.white,
+          ),
         ),
         textDirection: TextDirection.ltr,
       )..layout();
       canvas.save();
       canvas.rotate(mid);
       canvas.translate(radius * 0.58, 0);
-      canvas.rotate(math.pi / 2 * 0); // texto radial
       tp.paint(canvas, Offset(-tp.width / 2, -tp.height / 2));
       canvas.restore();
     }

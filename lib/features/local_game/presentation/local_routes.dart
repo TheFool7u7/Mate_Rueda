@@ -1,10 +1,11 @@
-/// Rutas del modo demo local de MateRueda (un solo dispositivo).
+/// Rutas de MateRueda (modo 1 dispositivo y modo varios dispositivos).
 class LocalRoutes {
   LocalRoutes._();
 
   static const String splash = '/';
   static const String menu = '/menu';
   static const String setup = '/setup';
+  static const String join = '/join';
   static const String lobby = '/lobby';
   static const String spin = '/spin';
   static const String challenge = '/challenge';

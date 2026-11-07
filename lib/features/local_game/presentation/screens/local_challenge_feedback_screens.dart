@@ -11,7 +11,7 @@ import 'package:wordwonderslink/features/local_game/presentation/widgets/mate_wi
 import 'package:wordwonderslink/shared/data/tts_service.dart';
 
 /// Pantalla 6 — Reto: envuelve [MathChallengeScreen] con los datos de la
-/// partida local y una etiqueta con la mesa que está en turno.
+/// partida y una etiqueta con la mesa que está en turno.
 class LocalChallengeScreen extends StatelessWidget {
   const LocalChallengeScreen({super.key});
 
@@ -26,59 +26,80 @@ class LocalChallengeScreen extends StatelessWidget {
       return const SizedBox.shrink();
     }
     final team = game.currentTeam;
+    final canAnswer = game.isMyTurn || game.isHost;
+    final turnLabel = game.isOnline && !game.isHost
+        ? (game.isMyTurn
+              ? '¡Tu turno, ${team.name}!'
+              : 'Turno de ${team.name}')
+        : 'Turno de ${team.name}';
 
     return Material(
       type: MaterialType.transparency,
       child: Stack(
-      children: [
-        MathChallengeScreen(
-          challenge: challenge,
-          progress: game.progress,
-          autoSpeak: true,
-          onAnswered: (index, correct) async {
-            final controller = context.read<LocalGameController>();
-            final router = GoRouter.of(context);
-            controller.answer(index);
-            // Breve pausa para ver la opción elegida antes de la
-            // retroalimentación.
-            await Future.delayed(const Duration(milliseconds: 700));
-            router.go(LocalRoutes.feedback);
-          },
-        ),
-        Positioned(
-          top: 0,
-          left: 0,
-          right: 0,
-          child: SafeArea(
-            child: Center(
-              child: Container(
-                margin: const EdgeInsets.only(top: 8),
-                padding: const EdgeInsets.fromLTRB(6, 6, 20, 6),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(40),
-                  border: Border.all(color: MateColors.moradoVivo, width: 4),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    TeamAvatar(
-                      color: team.color,
-                      label: '${game.currentTeamIndex + 1}',
-                      size: 40,
+        children: [
+          MathChallengeScreen(
+            challenge: challenge,
+            progress: game.progress,
+            enabled: canAnswer,
+            autoSpeak: true,
+            onAnswered: (index, correct) async {
+              final controller = context.read<LocalGameController>();
+              if (!controller.isOnline) {
+                final router = GoRouter.of(context);
+                controller.answer(index);
+                // Breve pausa para ver la opción elegida antes de la
+                // retroalimentación.
+                await Future.delayed(const Duration(milliseconds: 700));
+                router.go(LocalRoutes.feedback);
+                return;
+              }
+              if (controller.isHost) {
+                await Future.delayed(const Duration(milliseconds: 700));
+                controller.answer(index);
+              } else {
+                await controller.submitAnswer(index);
+              }
+            },
+          ),
+          Positioned(
+            top: 0,
+            left: 0,
+            right: 0,
+            child: SafeArea(
+              child: Center(
+                child: Container(
+                  margin: const EdgeInsets.only(top: 8),
+                  padding: const EdgeInsets.fromLTRB(6, 6, 20, 6),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(40),
+                    border: Border.all(
+                      color: canAnswer
+                          ? MateColors.moradoVivo
+                          : MateColors.pista,
+                      width: 4,
                     ),
-                    const SizedBox(width: 10),
-                    Text(
-                      'Turno de ${team.name}',
-                      style: mateFredoka(22, color: MateColors.moradoOscuro),
-                    ),
-                  ],
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      TeamAvatar(
+                        color: team.color,
+                        label: '${game.currentTeamIndex + 1}',
+                        size: 40,
+                      ),
+                      const SizedBox(width: 10),
+                      Text(
+                        turnLabel,
+                        style: mateFredoka(22, color: MateColors.moradoOscuro),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),
           ),
-        ),
-      ],
+        ],
       ),
     );
   }
@@ -154,7 +175,9 @@ class _LocalFeedbackScreenState extends State<LocalFeedbackScreen> {
             MateOutlinedText(
               correct ? '¡Muy bien!' : '¡Casi! Intentemos otra',
               size: 46,
-              color: correct ? MateColors.turquesaOscuro : MateColors.moradoVivo,
+              color: correct
+                  ? MateColors.turquesaOscuro
+                  : MateColors.moradoVivo,
             ),
             const SizedBox(height: 20),
             if (correct)
@@ -162,7 +185,8 @@ class _LocalFeedbackScreenState extends State<LocalFeedbackScreen> {
                 tween: Tween(begin: 0, end: 1),
                 duration: const Duration(milliseconds: 900),
                 curve: Curves.elasticOut,
-                builder: (_, v, child) => Transform.scale(scale: v, child: child),
+                builder: (_, v, child) =>
+                    Transform.scale(scale: v, child: child),
                 child: Image.asset(
                   'assets/images/materueda/estrella.png',
                   height: 200,
@@ -188,7 +212,10 @@ class _LocalFeedbackScreenState extends State<LocalFeedbackScreen> {
                           fit: BoxFit.scaleDown,
                           child: Text(
                             '${team.name}: ${team.stars} ${team.stars == 1 ? 'estrella' : 'estrellas'}',
-                            style: mateFredoka(26, color: MateColors.moradoOscuro),
+                            style: mateFredoka(
+                              26,
+                              color: MateColors.moradoOscuro,
+                            ),
                           ),
                         ),
                       ),
@@ -198,7 +225,11 @@ class _LocalFeedbackScreenState extends State<LocalFeedbackScreen> {
                     const SizedBox(height: 12),
                     Text(
                       'La respuesta era',
-                      style: mateFredoka(20, color: MateColors.moradoRueda, weight: FontWeight.w500),
+                      style: mateFredoka(
+                        20,
+                        color: MateColors.moradoRueda,
+                        weight: FontWeight.w500,
+                      ),
                     ),
                     Text(
                       answer,
@@ -210,14 +241,23 @@ class _LocalFeedbackScreenState extends State<LocalFeedbackScreen> {
               ),
             ),
             const SizedBox(height: 24),
-            MateButton.turquesa(
-              label: game.isLastRound ? 'Ver resultados' : 'Siguiente',
-              icon: Icons.arrow_forward_rounded,
-              onTap: () {
-                final more = game.next();
-                context.go(more ? LocalRoutes.spin : LocalRoutes.results);
-              },
-            ),
+            if (game.isHost)
+              MateButton.turquesa(
+                label: game.isLastRound ? 'Ver resultados' : 'Siguiente',
+                icon: Icons.arrow_forward_rounded,
+                onTap: () {
+                  final more = game.next();
+                  if (!game.isOnline) {
+                    context.go(more ? LocalRoutes.spin : LocalRoutes.results);
+                  }
+                },
+              )
+            else
+              MateOutlinedText(
+                'Esperando a la profe...',
+                size: 28,
+                color: MateColors.moradoOscuro,
+              ),
           ],
         ),
       ),

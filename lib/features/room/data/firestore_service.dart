@@ -4,7 +4,6 @@ import 'package:flutter/foundation.dart';
 import 'package:wordwonderslink/features/auth/domain/user_model.dart';
 import 'package:wordwonderslink/features/room/domain/room_model.dart';
 import 'package:wordwonderslink/features/game/domain/round_model.dart';
-import 'package:wordwonderslink/features/evaluation/domain/vote_model.dart';
 import 'package:wordwonderslink/core/error/app_exceptions.dart';
 
 /// Servicio de Cloud Firestore para datos persistentes ("fríos").
@@ -290,81 +289,6 @@ class FirestoreService {
         originalError: e,
       );
     }
-  }
-
-  // ══════════════════════════════════════
-  // VOTOS
-  // ══════════════════════════════════════
-
-  /// Guarda el voto de un jugador sobre una respuesta.
-  /// El documento usa el voterId como ID para evitar votos duplicados.
-  /// Regla de seguridad: request.auth.uid == voteId
-  Future<void> submitVote(
-    String roomCode,
-    String roundId,
-    String letterId,
-    VoteModel vote,
-  ) async {
-    try {
-      await _roomsRef
-          .doc(roomCode)
-          .collection('rounds')
-          .doc(roundId)
-          .collection('responses')
-          .doc(letterId)
-          .collection('votes')
-          .doc(vote.voterId)
-          .set(vote.toJson());
-    } catch (e) {
-      throw FirestoreException(
-        message: 'Error al enviar voto: $e',
-        originalError: e,
-      );
-    }
-  }
-
-  /// Obtiene todos los votos de una respuesta
-  Future<List<VoteModel>> getVotes(
-    String roomCode,
-    String roundId,
-    String letterId,
-  ) async {
-    try {
-      final snapshot = await _roomsRef
-          .doc(roomCode)
-          .collection('rounds')
-          .doc(roundId)
-          .collection('responses')
-          .doc(letterId)
-          .collection('votes')
-          .get();
-      return snapshot.docs.map((doc) => VoteModel.fromFirestore(doc)).toList();
-    } catch (e) {
-      throw FirestoreException(
-        message: 'Error al obtener votos: $e',
-        originalError: e,
-      );
-    }
-  }
-
-  /// Stream de todos los votos de una respuesta en tiempo real
-  Stream<List<VoteModel>> watchVotes(
-    String roomCode,
-    String roundId,
-    String letterId,
-  ) {
-    return _roomsRef
-        .doc(roomCode)
-        .collection('rounds')
-        .doc(roundId)
-        .collection('responses')
-        .doc(letterId)
-        .collection('votes')
-        .snapshots()
-        .map(
-          (snapshot) =>
-              snapshot.docs.map((doc) => VoteModel.fromFirestore(doc)).toList(),
-        );
   }
 
   // ══════════════════════════════════════

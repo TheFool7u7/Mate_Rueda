@@ -17,8 +17,6 @@ import 'package:wordwonderslink/features/room/presentation/screens/join_room_scr
 import 'package:wordwonderslink/features/room/presentation/screens/lobby_screen.dart';
 import 'package:wordwonderslink/features/game/presentation/screens/game_screen.dart';
 import 'package:wordwonderslink/features/game/presentation/screens/answering_screen.dart';
-import 'package:wordwonderslink/features/evaluation/presentation/screens/evaluation_screen.dart';
-import 'package:wordwonderslink/features/punishment/presentation/screens/punishment_screen.dart';
 import 'package:wordwonderslink/features/results/presentation/screens/results_screen.dart';
 import 'package:wordwonderslink/settings/presentation/screens/settings_screen.dart';
 import 'package:wordwonderslink/features/challenge/presentation/screens/math_challenge_demo_screen.dart';
@@ -144,15 +142,17 @@ class AppRouter {
               break;
             case GamePhase.answering:
               if (isMyTurn) {
-                if (currentPath != AppRoutes.answering)
+                if (currentPath != AppRoutes.answering) {
                   return AppRoutes.answering;
+                }
               } else {
                 if (currentPath != AppRoutes.game) return AppRoutes.game;
               }
               break;
             case GamePhase.evaluating:
-              if (currentPath != AppRoutes.evaluation)
+              if (currentPath != AppRoutes.evaluation) {
                 return AppRoutes.evaluation;
+              }
               break;
             case GamePhase.punishment:
               // Permitir /results ademas de /punishment:
@@ -242,16 +242,6 @@ class AppRouter {
           path: AppRoutes.answering,
           name: 'answering',
           builder: (context, state) => const AnsweringScreen(),
-        ),
-        GoRoute(
-          path: AppRoutes.evaluation,
-          name: 'evaluation',
-          builder: (context, state) => const EvaluationScreen(),
-        ),
-        GoRoute(
-          path: AppRoutes.punishment,
-          name: 'punishment',
-          builder: (context, state) => const PunishmentScreen(),
         ),
         GoRoute(
           path: AppRoutes.results,

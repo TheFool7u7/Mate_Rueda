@@ -1,81 +1,63 @@
-# Word Wonders Link
+# MateRueda — ¡Gira, juega y aprende matemática!
 
-¡Bienvenido al repositorio oficial de **Word Wonders Link**! 🎮
-
-Este es un emocionante juego multijugador en tiempo real para dispositivos móviles (Android/iOS) donde la rapidez mental y el vocabulario son tus mejores armas. Gira la ruleta, sé el primero en ganar una letra, escribe la palabra más sorprendente de la categoría en menos de 30 segundos, y asegúrate de que la comunidad vote a tu favor. ¡El jugador con menos puntos recibirá un castigo interactivo!
+Aplicación educativa colaborativa para estudiantes de **1.° grado de primaria (6 a 7 años)** de la **Escuela Alberto Echandi Montero** (San Juan Norte de Poás, Alajuela, Costa Rica), desarrollada en el marco del Trabajo Comunal Universitario **TC-563** de la Universidad de Costa Rica y adaptada a partir del proyecto de código abierto *Word Wonders Link*.
 
 ---
 
-## 🎯 Objetivo del Juego
+## 🎯 Objetivos de Aprendizaje (OA1–OA6)
 
-El juego consta de varias rondas donde la aplicación genera categorías aleatorias (Ej. "Animales", "Países", "Comida").
-1. **Ruleta Rápida:** Una ruleta de letras aparece en el centro de la pantalla. Los jugadores deben presionar su botón para bloquear la letra que deseen. Es una carrera de reflejos, una letra solo puede ser tomada por un jugador.
-2. **Respuesta bajo presión:** El que consigue una letra tiene que escribir una palabra que empiece con esa letra y que pertenezca a la categoría vigente antes de que el reloj marque cero. El resto espera y escucha la tensión del reloj.
-3. **Votación:** Los demás jugadores deciden si la palabra es válida, y qué tan buena fue, dándole una puntuación del 1 al 10, y una insignia (Común, Excelente, Sorprendente).
-4. **Castigo:** Al terminar las rondas, el jugador con menor puntaje sufre un castigo (ej. tomarse una selfie graciosa, cantar, o encontrar un color en el mundo real con la cámara). ¡Los demás se reirán de los resultados en tiempo real!
+La ruleta de **MateRueda** gira entre **5 categorías matemáticas** alineadas al programa de primer año del MEP:
 
----
-
-## 📸 Pantallas Principales
-
-- **Menú y Salas:** Ingresa tu usuario, visualiza a los mejores jugadores en el Leaderboard global. Crea una sala compartiendo un código de 6 dígitos, o únete a la de tus amigos.
-- **La Ruleta (Game Screen):** Una interfaz inmersiva con el abecedario. Se actualiza en tiempo real mostrando quién capturó qué letra con un sistema "first-come, first-served".
-- **Respuesta y Tensión:** Un teclado inteligente con temporizador animado y una ruleta de tiempo.
-- **La Votación:** Botones modernos de votación con animaciones sutiles que desaparecen para consolidar el puntaje final del turno.
-- **La Pantalla de Castigo (Punishment Screen):** Integramos la cámara frontal, trasera, y el micrófono para penalizar a los perdedores, compartiendo el resultado multimedia al resto de la sala inmediatamente mediante Firebase Storage.
+1. **Conteo de objetos (OA1):** Contar colecciones visuales de elementos cotidianos (manzanas, estrellas, globos, peces, flores y bloques) en niveles Básico (1 a 10) y Ampliado (hasta 20).
+2. **Suma hasta 10 / 20 (OA2):** Resolver sumas con apoyo de grupos visuales de objetos.
+3. **Resta sencilla (OA3):** Resolver restas con representación concreta (objetos tachados).
+4. **Comparación de cantidades (OA4):** Identificar dónde hay más (`◀`, `▶`) o si ambos grupos tienen la misma cantidad (`=`).
+5. **Figuras geométricas en objetos del hogar (OA5):** Reconocer formas geométricas en objetos cotidianos alternando ambas variantes pedagógicas:
+   - **Círculo** ↔ *el reloj de pared*
+   - **Cuadrado** ↔ *la ventana*
+   - **Triángulo** ↔ *el pedazo de pizza*
+   - **Rectángulo** ↔ *el celular*
+6. **Trabajo colaborativo por mesas (OA6):** Fomentar turnos respetuosos, apoyo mutuo y celebración grupal de las estrellas obtenidas por toda el aula.
 
 ---
 
-## 🛠 Tecnologías Utilizadas
+## 🖥️ Modos de Juego
 
-- **Framework UI:** Flutter SDK (`^3.9.2`) usando la arquitectura Hybrid Feature-Based.
-- **Lenguaje:** Dart.
-- **Gestión de Estado:** `provider` acoplado con Streams reactivos.
-- **Navegación:** `go_router` con guards basados en sesión.
-- **Backend (Serverless):** Firebase
-  - **Firebase Authentication:** (Login por Google y Email).
-  - **Firebase Realtime Database:** (Latencia <100ms para el estado del juego y bloqueos atómicos).
-  - **Cloud Firestore:** (Persistencia segura a largo plazo y leaderboard).
-  - **Firebase Storage:** (Subida y bajada de fotos y audios temporales).
-  - **Cloud Functions:** (Seguridad en conteo de votos).
-- **Multimedia:** `camera`, `record` y `just_audio` (Música y SFX inmersivos).
+Al tocar **CREAR SALA**, la persona docente puede elegir entre dos modalidades:
+
+- **📱 1 dispositivo (Modo Aula Local):** Un único teléfono o tableta se rota por turnos entre las mesas o se proyecta frente a la pizarra. No requiere conexión a internet.
+- **🌐 Varios dispositivos (Sincronizado en tiempo real):** La persona docente crea una sala con un código de 6 caracteres y cada mesa se une desde su propio dispositivo tocando **UNIRSE A SALA**. Todas las pantallas ven la ruleta girar en simultáneo, el reto activo, la retroalimentación y el podio final (cumpliendo **RNF05**: latencia de sincronización $\le 3\text{ s}$).
 
 ---
 
-## 📁 Estructura del Proyecto y Documentación
+## 🛡️ Privacidad, Accesibilidad y Diseño Inclusivo (RNF01–RNF05)
 
-Hemos diseñado este repositorio priorizando la legibilidad y escalabilidad. Te invitamos a leer la documentación detallada dentro de la carpeta `/docs`:
-
-1. [Instalación local y Firebase desde cero](docs/INSTALACION.md)
-2. [Arquitectura Hybrid Feature-Based](docs/ARQUITECTURA.md)
-3. [Estructuras en Firebase (Colecciones y Reglas)](docs/FIREBASE.md)
-4. [Flujo lógico del juego paso a paso](docs/FLUJO_DE_JUEGO.md)
-5. [Mapeo de pantallas y navegación](docs/PANTALLAS.md)
-6. [Librerías y dependencias usadas](docs/PAQUETES.md)
+- **RNF01 / RNF02 — Interfaz accesible y narración por voz (TTS):** Instrucciones breves de una sola línea acompañadas de lectura en voz alta en español (`flutter_tts`) e ilustraciones vectoriales claras para niños en etapa de lectoescritura inicial y estudiantes con condición del espectro autista.
+- **RNF03 — Protección estricta de datos de personas menores de edad:**
+  - **Cero permisos de cámara o micrófono** en `AndroidManifest.xml` e `Info.plist`.
+  - **Sin cuentas personales ni captura multimedia:** las sesiones multidispositivo utilizan únicamente identificadores de mesa genéricos (*Mesa Sol*, *Mesa Luna*, *Mesa Estrella*, *Mesa Cometa*) y salas efímeras.
+- **RF06 / RF07 — Retroalimentación siempre positiva:** Sin pantallas de castigo ni sonidos frustrantes; cada intento brinda acompañamiento pedagógico y reconocimiento por estrellas e insignias.
 
 ---
 
-## ⚙️ Requisitos y Cómo Correr el Proyecto
+## 🚀 Cómo Ejecutar y Compilar
 
-Para levantar el proyecto en tu entorno local:
+### Requisitos
+- Flutter SDK `^3.9.2`
 
-1. **Requisitos:** Flutter SDK, Android Studio, Node.js y una cuenta activa de Firebase.
-2. **Clonar Repo e Instalar Dependencias:**
-   ```bash
-   git clone <REPO_URL>
-   cd wordwonderslink
-   flutter pub get
-   ```
-3. **Credenciales:** Descarga el archivo `google-services.json` de tu proyecto de Firebase y ponlo en `android/app/`.
-4. **Ejecutar:**
-   ```bash
-   flutter run
-   ```
-*Para instrucciones detalladas sobre cómo configurar Firebase desde cero y desplegar las Cloud Functions, revisa [INSTALACION.md](docs/INSTALACION.md).*
+### Ejecutar en modo desarrollo
+```bash
+flutter pub get
+flutter run
+```
 
----
+### Ejecutar pruebas automatizadas
+```bash
+flutter test
+```
 
-## 👨‍💻 Créditos y Autoría
-
-Desarrollado y mantenido con ❤️ para la comunidad de Flutter. 
-*Word Wonders Link - Innovando la diversión multijugador móvil en tiempo real.*
+### Generar APK de instalación (Android)
+```bash
+flutter build apk --release
+```
+El instalador se genera en `build/app/outputs/flutter-apk/app-release.apk`.

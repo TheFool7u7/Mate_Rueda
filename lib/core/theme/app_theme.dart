@@ -214,13 +214,15 @@ class AppTheme {
       // ── Switch ──
       switchTheme: SwitchThemeData(
         thumbColor: WidgetStateProperty.resolveWith((states) {
-          if (states.contains(WidgetState.selected))
+          if (states.contains(WidgetState.selected)) {
             return AppColors.primaryBlue;
+          }
           return AppColors.textGrey;
         }),
         trackColor: WidgetStateProperty.resolveWith((states) {
-          if (states.contains(WidgetState.selected))
+          if (states.contains(WidgetState.selected)) {
             return AppColors.primaryBlueLight;
+          }
           return AppColors.dividerColor;
         }),
       ),

@@ -28,7 +28,6 @@ class _AnsweringScreenState extends State<AnsweringScreen>
 
   // Pulse animation for letter badge
   late final AnimationController _pulseController;
-  late final Animation<double> _pulseAnim;
 
   @override
   void initState() {
@@ -45,9 +44,6 @@ class _AnsweringScreenState extends State<AnsweringScreen>
     _pulseController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 600),
-    );
-    _pulseAnim = Tween<double>(begin: 1.0, end: 1.12).animate(
-      CurvedAnimation(parent: _pulseController, curve: Curves.easeInOut),
     );
   }
 

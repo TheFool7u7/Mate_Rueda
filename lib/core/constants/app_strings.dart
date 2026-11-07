@@ -4,7 +4,7 @@ class AppStrings {
   AppStrings._();
 
   // ── General / App ──
-  static const String appName = 'Word Wonders Link';
+  static const String appName = 'MateRueda';
   static const String loading = 'Cargando...';
   static const String error = 'Error';
   static const String ok = 'Aceptar';
@@ -15,7 +15,7 @@ class AppStrings {
   static const String retry = 'Reintentar';
 
   // ── Splash ──
-  static const String splashSubtitle = 'Conecta palabras, conecta amigos';
+  static const String splashSubtitle = '¡Gira, juega y aprende matemática!';
 
   // ── Login ──
   static const String loginTitle = 'INICIAR SESIÓN';

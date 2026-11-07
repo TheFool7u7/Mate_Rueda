@@ -1,15 +1,25 @@
 {
   "rules": {
+    "mate": {
+      "$roomId": {
+        ".read": "auth != null",
+        ".write": "auth != null && (!data.exists() || data.child('host').val() == auth.uid)",
+        "members": {
+          "$uid": {
+            ".write": "auth != null && auth.uid == $uid"
+          }
+        },
+        "answers": {
+          "$uid": {
+            ".write": "auth != null && auth.uid == $uid"
+          }
+        }
+      }
+    },
     "games": {
       "$roomId": {
         ".read": "auth != null && data.child('players').child(auth.uid).exists()",
-        ".write": "auth != null && (!data.exists() || data.child('players').child(auth.uid).exists() || newData.child('players').child(auth.uid).exists())",
-        
-        "letters": {
-          "$char": {
-            ".validate": "newData.child('status').val() == 'free' || newData.child('status').val() == 'used' || (newData.child('status').val() == 'locked' && data.child('status').val() == 'free')"
-          }
-        }
+        ".write": "auth != null && (!data.exists() || data.child('players').child(auth.uid).exists() || newData.child('players').child(auth.uid).exists())"
       }
     }
   }

@@ -65,13 +65,14 @@ class _HomeScreenState extends State<HomeScreen> {
         showDialog(
           context: context,
           barrierDismissible: false,
-          builder: (context) => WillPopScope(
-            onWillPop: () async => false,
+          builder: (dialogContext) => PopScope(
+            canPop: false,
             child: _NicknameDialog(
               onSave: (newNickname) async {
-                final auth = context.read<AuthProvider>();
+                final navigator = Navigator.of(dialogContext);
+                final auth = dialogContext.read<AuthProvider>();
                 await auth.updateUsername(newNickname);
-                if (mounted) Navigator.of(context).pop();
+                if (mounted) navigator.pop();
               },
             ),
           ),
@@ -716,7 +717,7 @@ class _NicknameDialogState extends State<_NicknameDialog> {
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: AppColors.primaryBlue.withOpacity(0.1),
+                color: AppColors.primaryBlue.withValues(alpha: 0.1),
                 shape: BoxShape.circle,
               ),
               child: const Icon(

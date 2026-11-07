@@ -1,5 +1,5 @@
 name: wordwonderslink
-description: "Word Wonders Link — Juego multijugador de palabras en tiempo real para Android."
+description: "MateRueda: la ruleta de los números — Ambiente multimedia educativo para primer grado."
 publish_to: 'none'
 version: 1.0.0+1
 
@@ -15,7 +15,6 @@ dependencies:
   firebase_auth: ^5.5.2
   cloud_firestore: ^5.6.6
   firebase_database: ^11.3.5
-  firebase_storage: ^12.4.5
 
   # ── Autenticación social ──
   google_sign_in: ^6.2.2
@@ -26,13 +25,8 @@ dependencies:
   # ── Navegación ──
   go_router: ^14.8.1
 
-  # ── Cámara y multimedia ──
-  camera: ^0.11.0+2
-  record: ^5.2.1
+  # ── Audio (música y efectos; sin cámara ni micrófono por RNF03) ──
   just_audio: ^0.9.42
-
-  # ── Permisos ──
-  permission_handler: ^11.3.1
 
   # ── Almacenamiento Local ──
   shared_preferences: ^2.2.3
@@ -71,14 +65,10 @@ flutter:
       fonts:
         - asset: assets/fonts/Fredoka.ttf
 
-# Resuelve incompatibilidad record_linux 0.7.2 vs record_platform_interface 1.5.0
-dependency_overrides:
-  record_linux: ^1.3.0
-
 flutter_launcher_icons:
   android: "launcher_icon"
   ios: true
-  image_path: "assets/icons/logo.png"
+  image_path: "assets/images/materueda/logotipo.png"
   min_sdk_android: 21
-  adaptive_icon_background: "assets/icons/logo.png"
-  adaptive_icon_foreground: "assets/icons/logo.png"
+  adaptive_icon_background: "#6A4C93"
+  adaptive_icon_foreground: "assets/images/materueda/logotipo.png"

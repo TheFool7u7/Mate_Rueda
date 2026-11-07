@@ -87,6 +87,28 @@ class ChallengeOption {
   /// Si es true, en vez de la figura geométrica se dibuja el objeto del
   /// hogar asociado (reloj, ventana, pizza, celular).
   final bool asObject;
+
+  Map<String, dynamic> toJson() => {
+    'label': label,
+    if (shape != null) 'shape': shape!.name,
+    if (asObject) 'asObject': true,
+  };
+
+  factory ChallengeOption.fromJson(Map<dynamic, dynamic> json) =>
+      ChallengeOption(
+        label: json['label'] as String? ?? '',
+        shape: _enumByName(ShapeKind.values, json['shape'] as String?),
+        asObject: json['asObject'] as bool? ?? false,
+      );
+}
+
+/// Busca un valor de enum por nombre (null si no existe o [name] es null).
+T? _enumByName<T extends Enum>(List<T> values, String? name) {
+  if (name == null) return null;
+  for (final v in values) {
+    if (v.name == name) return v;
+  }
+  return null;
 }
 
 /// Un reto matemático listo para mostrarse.
@@ -129,6 +151,42 @@ class MathChallenge {
 
   /// Texto que se lee en voz alta con el botón de audio.
   String get narration => question;
+
+  /// Serialización para sincronizar el reto entre dispositivos (RTDB).
+  Map<String, dynamic> toJson() => {
+    'category': category.name,
+    'question': question,
+    'visual': visual.name,
+    'options': [for (final o in options) o.toJson()],
+    'correctIndex': correctIndex,
+    'object': object.name,
+    'countA': countA,
+    'countB': countB,
+    if (shape != null) 'shape': shape!.name,
+    if (shapeAsObject) 'shapeAsObject': true,
+  };
+
+  factory MathChallenge.fromJson(Map<dynamic, dynamic> json) => MathChallenge(
+    category:
+        _enumByName(MathCategory.values, json['category'] as String?) ??
+        MathCategory.conteo,
+    question: json['question'] as String? ?? '',
+    visual:
+        _enumByName(ChallengeVisual.values, json['visual'] as String?) ??
+        ChallengeVisual.group,
+    options: [
+      for (final o in (json['options'] as List<dynamic>? ?? const []))
+        ChallengeOption.fromJson(o as Map<dynamic, dynamic>),
+    ],
+    correctIndex: (json['correctIndex'] as num?)?.toInt() ?? 0,
+    object:
+        _enumByName(ChallengeObject.values, json['object'] as String?) ??
+        ChallengeObject.manzana,
+    countA: (json['countA'] as num?)?.toInt() ?? 0,
+    countB: (json['countB'] as num?)?.toInt() ?? 0,
+    shape: _enumByName(ShapeKind.values, json['shape'] as String?),
+    shapeAsObject: json['shapeAsObject'] as bool? ?? false,
+  );
 }
 
 /// Rangos numéricos de los retos; la docente podrá elegirlos al crear la

@@ -10,7 +10,8 @@ import 'package:wordwonderslink/features/local_game/presentation/widgets/mate_wi
 import 'package:wordwonderslink/shared/data/audio_manager_service.dart';
 
 /// Pantalla 8 — Resultados: marcador grupal, podio por mesa y total de
-/// estrellas del grupo.
+/// estrellas del grupo (más el indicador de sincronización RNF05 en modo
+/// varios dispositivos).
 class LocalResultsScreen extends StatefulWidget {
   const LocalResultsScreen({super.key});
 
@@ -59,9 +60,15 @@ class _LocalResultsScreenState extends State<LocalResultsScreen> {
               builder: (_, v, __) => Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Image.asset('assets/images/materueda/estrella.png', height: 60),
+                  Image.asset(
+                    'assets/images/materueda/estrella.png',
+                    height: 60,
+                  ),
                   const SizedBox(width: 10),
-                  MateOutlinedText('$v ${v == 1 ? 'estrella' : 'estrellas'}', size: 40),
+                  MateOutlinedText(
+                    '$v ${v == 1 ? 'estrella' : 'estrellas'}',
+                    size: 40,
+                  ),
                 ],
               ),
             ),
@@ -72,21 +79,47 @@ class _LocalResultsScreenState extends State<LocalResultsScreen> {
                 children: [
                   for (var i = 0; i < ranking.length; i++) ...[
                     if (i > 0) const Divider(height: 16),
-                    _row(i, ranking[i], game),
+                    _row(i, ranking[i]),
                   ],
                 ],
               ),
             ),
+            if (game.isOnline && game.syncLatenciesMs.isNotEmpty) ...[
+              const SizedBox(height: 12),
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 8,
+                ),
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.9),
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(color: MateColors.turquesaCalma, width: 2),
+                ),
+                child: Text(
+                  'Sincronización (RNF05): '
+                  '${(game.rnf05ComplianceRatio * 100).round()}% ≤ 3 s · '
+                  'prom. ${game.averageLatencyMs} ms',
+                  style: mateFredoka(
+                    16,
+                    color: MateColors.moradoOscuro,
+                    weight: FontWeight.w500,
+                  ),
+                ),
+              ),
+            ],
             const SizedBox(height: 24),
-            MateButton.turquesa(
-              label: 'Jugar otra vez',
-              icon: Icons.replay_rounded,
-              onTap: () {
-                game.restart();
-                context.go(LocalRoutes.spin);
-              },
-            ),
-            const SizedBox(height: 8),
+            if (game.isHost) ...[
+              MateButton.turquesa(
+                label: 'Jugar otra vez',
+                icon: Icons.replay_rounded,
+                onTap: () {
+                  game.restart();
+                  if (!game.isOnline) context.go(LocalRoutes.spin);
+                },
+              ),
+              const SizedBox(height: 8),
+            ],
             MateButton.amarillo(
               label: 'Volver al menú',
               icon: Icons.home_rounded,
@@ -103,16 +136,25 @@ class _LocalResultsScreenState extends State<LocalResultsScreen> {
     );
   }
 
-  Widget _row(int i, TeamScore t, LocalGameController game) {
-    final medal = i < _medals.length ? _medals[i] : 'assets/icons/medalla_sin_rango.svg';
+  Widget _row(int i, TeamScore t) {
+    final medal = i < _medals.length
+        ? _medals[i]
+        : 'assets/icons/medalla_sin_rango.svg';
     return Row(
       children: [
         SvgPicture.asset(medal, width: 52, height: 52),
         const SizedBox(width: 12),
-        TeamAvatar(color: t.color, label: t.name.replaceAll('Mesa ', ''), size: 52),
+        TeamAvatar(
+          color: t.color,
+          label: t.name.replaceAll('Mesa ', ''),
+          size: 52,
+        ),
         const SizedBox(width: 12),
         Expanded(
-          child: Text(t.name, style: mateFredoka(26, color: MateColors.moradoOscuro)),
+          child: Text(
+            t.name,
+            style: mateFredoka(26, color: MateColors.moradoOscuro),
+          ),
         ),
         Image.asset('assets/images/materueda/estrella.png', height: 34),
         const SizedBox(width: 6),
